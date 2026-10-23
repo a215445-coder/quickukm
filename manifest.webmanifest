@@ -1,0 +1,16 @@
+{
+  "name": "QuickUKM — UKM Campus Bus",
+  "short_name": "QuickUKM",
+  "description": "A live campus bus companion for international students at Universiti Kebangsaan Malaysia.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1C168C",
+  "theme_color": "#1C168C",
+  "icons": [
+    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <title>QuickUKM — UKM Campus Bus</title>
+  <meta name="description" content="QuickUKM — a live campus bus companion for international students at UKM Bangi.">
+  <meta name="theme-color" content="#1C168C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QuickUKM">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+  <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <!-- ===== icon sprite ===== -->
+  <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-bus" viewBox="0 0 24 24">
+      <rect x="4" y="3.5" width="16" height="14" rx="3"/>
+      <path d="M4 9.5h16M8 17.5v2M16 17.5v2M7.5 13.5h.01M16.5 13.5h.01"/>
+    </symbol>
+    <symbol id="i-map" viewBox="0 0 24 24">
+      <path d="M9 4 3.8 6.2v13.3L9 17.3l6 2.2 5.2-2.2V4L15 6.2 9 4Z"/><path d="M9 4v13.3M15 6.2v13.3"/>
+    </symbol>
+    <symbol id="i-route" viewBox="0 0 24 24">
+      <circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/>
+      <path d="M8.4 18h3.1a3 3 0 0 0 3-3V9a3 3 0 0 1 3-3"/>
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24">
+      <path d="M12 20s-7.5-4.6-7.5-9.4A4.1 4.1 0 0 1 12 7.6a4.1 4.1 0 0 1 7.5 3C19.5 15.4 12 20 12 20Z"/>
+    </symbol>
+    <symbol id="i-heart-fill" viewBox="0 0 24 24">
+      <path d="M12 20s-7.5-4.6-7.5-9.4A4.1 4.1 0 0 1 12 7.6a4.1 4.1 0 0 1 7.5 3C19.5 15.4 12 20 12 20Z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24">
+      <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/>
+    </symbol>
+    <symbol id="i-back" viewBox="0 0 24 24">
+      <path d="M19 12H5M11 6l-6 6 6 6"/>
+    </symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24">
+      <path d="m9 5 7 7-7 7"/>
+    </symbol>
+    <symbol id="i-walk" viewBox="0 0 24 24">
+      <circle cx="13" cy="4.6" r="1.9"/>
+      <path d="m11 21 1.7-5.2-2.4-2.6.9-4.6 3 2.1 2.5 1.1M10 9l-2.2 3.4M15 14l2 3.4M12.7 15.8 15 21"/>
+    </symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24">
+      <path d="M19 10c0 5-7 10.5-7 10.5S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.4"/>
+    </symbol>
+    <symbol id="i-target" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24">
+      <path d="M7 4v13M4 14l3 3 3-3M17 20V7M14 10l3-3 3 3"/>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/>
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4.5M12 17h.01"/>
+    </symbol>
+    <symbol id="i-train" viewBox="0 0 24 24">
+      <rect x="5" y="3.5" width="14" height="14" rx="4"/><path d="M5 10h14M9 21l2-3.5M15 21l-2-3.5M9 14h.01M15 14h.01"/>
+    </symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24">
+      <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3ZM18.5 16l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 6.5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24">
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/>
+    </symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/>
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>
+    </symbol>
+  </svg>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="app" id="app" data-view="home">
+
+        <!-- ============================================================
+             MAP / HOME
+             ============================================================ -->
+        <section class="screen screen--map is-active" id="screen-map" aria-label="Live campus map">
+          <header class="map-header">
+            <div class="brand-row">
+              <div class="brand">
+                <span class="brand-mark brand-mark--light">
+                  <svg class="icon"><use href="#i-bus"/></svg>
+                </span>
+                <div class="brand-text">
+                  <h1>QuickUKM</h1>
+                  <p><span class="pulse-dot"></span> UKM Bangi · live campus</p>
+                </div>
+              </div>
+              <button class="icon-btn icon-btn--onDark" id="btnNotif" aria-label="Open notifications">
+                <svg class="icon"><use href="#i-bell"/></svg>
+                <span class="notif-dot" id="notifDot"></span>
+              </button>
+            </div>
+
+            <div class="mode-switch" role="tablist" aria-label="Campus travel mode">
+              <span class="mode-switch__live">Live</span>
+              <button class="mode-switch__item is-active" id="modeBus" role="tab" aria-selected="true">
+                <svg class="icon"><use href="#i-bus"/></svg> Bus tracker
+              </button>
+              <span class="mode-switch__divider"></span>
+              <button class="mode-switch__item" id="modeTimetable" role="tab" aria-selected="false">
+                <svg class="icon"><use href="#i-clock"/></svg> Timetable
+              </button>
+            </div>
+
+            <button class="search-pill search-pill--hero" id="btnPlan">
+              <svg class="icon"><use href="#i-search"/></svg>
+              <span>Plan your journey</span>
+            </button>
+          </header>
+
+          <div class="map-stage">
+          <svg id="campusMap" class="campus-map" role="img" aria-label="Stylised map of UKM Bangi campus with live bus positions"></svg>
+
+
+          <div class="map-side-tools">
+            <button class="map-tool" id="btnLocate" aria-label="Centre on my location">
+              <svg class="icon"><use href="#i-target"/></svg>
+            </button>
+            <div class="map-tool-group">
+              <button class="map-tool" id="btnZoomIn" aria-label="Zoom in"><svg class="icon"><use href="#i-plus"/></svg></button>
+              <span class="map-tool-rule"></span>
+              <button class="map-tool" id="btnZoomOut" aria-label="Zoom out"><svg class="icon"><use href="#i-minus"/></svg></button>
+            </div>
+          </div>
+
+          <div class="map-legend" id="mapLegend">
+            <span class="pulse-dot"></span><span id="mapLegendText">9 buses live</span>
+          </div>
+
+          <!-- live trip top bar -->
+          <div class="trip-topbar" id="tripTopbar">
+            <button class="icon-btn icon-btn--glass" id="btnTripBack" aria-label="Back">
+              <svg class="icon"><use href="#i-back"/></svg>
+            </button>
+            <div class="trip-topbar__text">
+              <strong>Live trip</strong>
+              <span id="tripTopSub">Line A · KTHO → FTSM</span>
+            </div>
+            <span class="live-chip">LIVE</span>
+          </div>
+
+          <!-- home bottom sheet -->
+          <div class="home-sheet" id="homeSheet">
+            <button class="sheet-grab" id="sheetGrab" aria-label="Expand nearby stops"><span></span></button>
+            <div class="sheet-head">
+              <div>
+                <h2>Nearby stops</h2>
+                <p id="nearbyMeta">Finding stops near you…</p>
+              </div>
+              <button class="link-btn" id="btnSeeAll">See all</button>
+            </div>
+            <div class="h-scroll" id="nearbyStops"></div>
+            <div class="live-buses">
+              <div class="section-mini">
+                <span>Buses live now</span>
+                <span class="live-chip">LIVE</span>
+              </div>
+              <div id="liveBusList"></div>
+            </div>
+          </div>
+
+          <!-- live trip sheet -->
+          <div class="trip-sheet" id="tripSheet">
+            <div class="trip-sheet__head">
+              <div class="route-pill" id="tripBadge">A</div>
+              <div class="trip-sheet__title">
+                <h2 id="tripTitle">KTHO → FTSM</h2>
+                <p id="tripLine">Line A · Hostel ↔ Faculty</p>
+              </div>
+              <button class="icon-btn icon-btn--plain" id="btnCloseTrip" aria-label="Close live trip">
+                <svg class="icon"><use href="#i-close"/></svg>
+              </button>
+            </div>
+
+            <div class="trip-eta">
+              <div class="trip-eta__clock">
+                <span class="trip-eta__num" id="tripEta">4</span>
+                <span class="trip-eta__unit">min</span>
+              </div>
+              <div class="trip-eta__copy">
+                <p>until <strong id="tripDest">FTSM</strong></p>
+                <span id="tripEtaNote">Bus is on the way</span>
+              </div>
+              <span class="live-chip">LIVE</span>
+            </div>
+
+            <div class="trip-progress">
+              <div class="trip-progress__bar"><span id="tripProgressBar"></span></div>
+              <div class="trip-progress__labels">
+                <span>Board at <b id="tripBoard">KTHO</b></span>
+                <span id="tripStopsLeft">6 stops</span>
+                <span>Get off at <b id="tripExit">FTSM</b></span>
+              </div>
+            </div>
+
+            <div class="trip-next" id="tripNext">
+              <span class="trip-next__icon"><svg class="icon"><use href="#i-bus"/></svg></span>
+              <div><small>NEXT STOP</small><strong id="tripNextName">Pusanika</strong></div>
+              <span class="trip-next__eta" id="tripNextEta">1 min</span>
+            </div>
+
+            <div class="alert-row">
+              <span class="alert-row__icon"><svg class="icon"><use href="#i-bell"/></svg></span>
+              <div class="alert-row__copy">
+                <strong>Arrival reminder</strong>
+                <small>Alert me 2 stops before mine</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="tripAlertToggle" checked>
+                <span></span>
+              </label>
+            </div>
+
+            <button class="btn btn--ghost btn--block" id="btnEndTrip">End trip</button>
+          </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             ROUTES
+             ============================================================ -->
+        <section class="screen page-screen" id="screen-routes" aria-label="Bus routes">
+          <div class="page-scroll">
+            <header class="page-head">
+              <span class="eyebrow">UKM Bangi</span>
+              <h1>Bus routes</h1>
+              <p>4 campus services · updated today</p>
+            </header>
+            <div class="filter-row" id="routeFilters">
+              <button class="chip is-active" data-filter="all">All</button>
+              <button class="chip" data-filter="hostel">Hostels</button>
+              <button class="chip" data-filter="faculty">Faculties</button>
+              <button class="chip" data-filter="external">External</button>
+            </div>
+            <div class="route-list" id="routesList"></div>
+            <div class="tip-card">
+              <span class="tip-card__icon"><svg class="icon"><use href="#i-sparkle"/></svg></span>
+              <div><strong>Tip for new students</strong><p>Line A runs straight from the hostels to the faculty belt — save it to get an alert before it reaches your stop.</p></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             TIMETABLE
+             ============================================================ -->
+        <section class="screen page-screen" id="screen-timetable" aria-label="Timetable">
+          <div class="page-scroll">
+            <header class="page-head">
+              <span class="eyebrow">Schedule</span>
+              <h1>Timetable</h1>
+              <p id="ttDate">Thursday, 23 October</p>
+            </header>
+
+            <div class="segmented" id="daySeg" role="tablist">
+              <button class="is-active" data-day="weekday" role="tab">Mon – Fri</button>
+              <button data-day="sat" role="tab">Saturday</button>
+              <button data-day="sun" role="tab">Sunday</button>
+            </div>
+
+            <div class="tt-route-row" id="ttRoutes"></div>
+
+            <div class="next-card" id="ttNextCard">
+              <div class="next-card__top">
+                <span class="next-card__label">NEXT DEPARTURE</span>
+                <span class="next-card__line" id="ttNextLine">Line A</span>
+              </div>
+              <div class="next-card__main">
+                <strong id="ttNextTime">09:40</strong>
+                <div>
+                  <span class="next-card__in" id="ttNextIn">in 4 min</span>
+                  <small id="ttNextFrom">from KTHO</small>
+                </div>
+              </div>
+              <div class="next-card__foot">
+                <span><svg class="icon"><use href="#i-clock"/></svg> Every <b id="ttHeadway">10</b> min</span>
+                <span id="ttService">07:00 – 19:00</span>
+              </div>
+            </div>
+
+            <div class="list-head">
+              <h2>Upcoming departures</h2>
+              <span id="ttStopLabel">KTHO</span>
+            </div>
+            <div class="tt-list" id="ttList"></div>
+            <p class="fine-print">Scheduled campus shuttles. Real-time delays are reflected on the map. Prototype timetable for demonstration.</p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             SAVED
+             ============================================================ -->
+        <section class="screen page-screen" id="screen-saved" aria-label="Saved routes">
+          <div class="page-scroll">
+            <header class="page-head page-head--row">
+              <div>
+                <span class="eyebrow">Your shortcuts</span>
+                <h1>Saved</h1>
+                <p id="savedMeta">2 routes · 2 stops</p>
+              </div>
+              <button class="icon-btn icon-btn--soft" id="btnAddFav" aria-label="Add a favourite route">
+                <svg class="icon"><use href="#i-plus"/></svg>
+              </button>
+            </header>
+
+            <div class="section-row">
+              <h2>Favourite routes</h2>
+              <span class="muted">Arrival alerts</span>
+            </div>
+            <div class="saved-list" id="savedRoutes"></div>
+
+            <div class="section-row section-row--top">
+              <h2>Saved stops</h2>
+              <span class="muted">Live arrivals</span>
+            </div>
+            <div class="saved-stops" id="savedStops"></div>
+
+            <div class="saved-tip">
+              <span class="saved-tip__icon"><svg class="icon"><use href="#i-bell"/></svg></span>
+              <div><strong>Arrival alerts are on</strong><p>QuickUKM will notify you two stops before your saved destinations.</p></div>
+            </div>
+
+            <div class="empty-note" id="savedEmpty" hidden>
+              <span class="empty-note__icon"><svg class="icon"><use href="#i-heart"/></svg></span>
+              <strong>No favourites yet</strong>
+              <p>Save a route from the planner and it will appear here with arrival alerts.</p>
+              <button class="btn btn--soft" id="btnSavedPlan">Plan a route</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             MORE
+             ============================================================ -->
+        <section class="screen page-screen" id="screen-more" aria-label="More">
+          <div class="page-scroll">
+            <header class="page-head">
+              <span class="eyebrow">Settings</span>
+              <h1>More</h1>
+              <p>Make QuickUKM yours</p>
+            </header>
+
+            <div class="profile-card">
+              <div class="avatar">UK</div>
+              <div class="profile-card__copy">
+                <strong>UKM international student</strong>
+                <span>Guest profile · Bangi campus</span>
+              </div>
+              <span class="profile-card__tag">v0.1</span>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group__title">Notifications</div>
+              <label class="settings-row">
+                <span class="settings-row__icon settings-row__icon--blue"><svg class="icon"><use href="#i-bell"/></svg></span>
+                <span class="settings-row__copy"><strong>Arrival reminders</strong><small>2 stops before your stop</small></span>
+                <span class="switch"><input type="checkbox" id="settingAlerts" checked><span></span></span>
+              </label>
+              <label class="settings-row">
+                <span class="settings-row__icon settings-row__icon--amber"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="settings-row__copy"><strong>Service updates</strong><small>Delays and route changes</small></span>
+                <span class="switch"><input type="checkbox" id="settingService" checked><span></span></span>
+              </label>
+              <label class="settings-row">
+                <span class="settings-row__icon settings-row__icon--green"><svg class="icon"><use href="#i-bus"/></svg></span>
+                <span class="settings-row__copy"><strong>Sound &amp; vibration</strong><small>Play a sound for alerts</small></span>
+                <span class="switch"><input type="checkbox" id="settingSound"><span></span></span>
+              </label>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group__title">Campus</div>
+              <div class="settings-row settings-row--static">
+                <span class="settings-row__icon settings-row__icon--slate"><svg class="icon"><use href="#i-pin"/></svg></span>
+                <span class="settings-row__copy"><strong>Home campus</strong><small>Universiti Kebangsaan Malaysia</small></span>
+                <span class="settings-row__value">Bangi</span>
+              </div>
+              <div class="settings-row settings-row--static">
+                <span class="settings-row__icon settings-row__icon--slate"><svg class="icon"><use href="#i-clock"/></svg></span>
+                <span class="settings-row__copy"><strong>Service hours</strong><small>Weekdays</small></span>
+                <span class="settings-row__value">07:00 – 19:00</span>
+              </div>
+            </div>
+
+            <button class="btn btn--soft btn--block" id="btnTestAlert">
+              <svg class="icon"><use href="#i-bell"/></svg>
+              Send a test arrival alert
+            </button>
+
+            <div class="about-card">
+              <div class="about-card__logo"><svg class="icon"><use href="#i-bus"/></svg></div>
+              <div>
+                <strong>QuickUKM</strong>
+                <p>A campus bus companion made for international students at UKM. Prototype · simulated live data.</p>
+              </div>
+            </div>
+            <p class="fine-print fine-print--center">Not an official UKM service · v0.1 prototype</p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             PLANNER
+             ============================================================ -->
+        <section class="screen page-screen push-screen" id="screen-planner" aria-label="Plan your trip">
+          <header class="push-head">
+            <button class="icon-btn icon-btn--plain" id="plannerBack" aria-label="Back">
+              <svg class="icon"><use href="#i-back"/></svg>
+            </button>
+            <h1>Plan your trip</h1>
+            <span class="push-head__spacer"></span>
+          </header>
+
+          <div class="page-scroll push-scroll" id="plannerScroll">
+            <div class="trip-form">
+              <div class="trip-form__rail" aria-hidden="true">
+                <span class="rail-dot rail-dot--from"></span>
+                <span class="rail-line"></span>
+                <span class="rail-dot rail-dot--to"></span>
+              </div>
+              <div class="trip-form__fields">
+                <button class="field" id="fromField">
+                  <small>FROM</small>
+                  <strong id="fromValue">Kolej Tun Hussein Onn</strong>
+                </button>
+                <div class="field-divider"></div>
+                <button class="field" id="toField">
+                  <small>TO</small>
+                  <strong id="toValue">Fakulti Teknologi &amp; Sains Maklumat</strong>
+                </button>
+              </div>
+              <button class="swap-btn" id="btnSwap" aria-label="Swap origin and destination">
+                <svg class="icon"><use href="#i-swap"/></svg>
+              </button>
+            </div>
+
+            <div class="planner-meta">
+              <span class="chip chip--soft"><svg class="icon"><use href="#i-clock"/></svg> Leave now</span>
+              <span class="muted" id="plannerHint">4 campus lines running</span>
+            </div>
+
+            <div class="quick-favs" id="plannerFavs"></div>
+
+            <button class="btn btn--primary btn--block" id="btnFind">Find routes</button>
+
+            <div class="planner-tip" id="plannerTip">
+              <span class="planner-tip__icon"><svg class="icon"><use href="#i-bell"/></svg></span>
+              <p><strong>Never miss your stop.</strong> Save this trip and QuickUKM will remind you two stops before you get off.</p>
+            </div>
+
+            <div class="results" id="plannerResults"></div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             ROUTE DETAIL
+             ============================================================ -->
+        <section class="screen page-screen" id="screen-route" aria-label="Route detail">
+          <div class="page-scroll route-page-scroll">
+            <div class="route-hero" id="routeHero">
+              <div class="route-hero__top">
+                <button class="icon-btn icon-btn--light" id="routeBack" aria-label="Back">
+                  <svg class="icon"><use href="#i-back"/></svg>
+                </button>
+                <button class="icon-btn icon-btn--light" id="btnSaveRoute" aria-label="Save route">
+                  <svg class="icon" id="saveRouteIcon"><use href="#i-heart"/></svg>
+                </button>
+              </div>
+              <div class="route-hero__badge" id="routeBadge">A</div>
+              <h1 id="routeTitle">Line A</h1>
+              <p id="routeSubtitle">Hostels to the faculty belt via the library</p>
+              <div class="route-hero__stats" id="routeStats"></div>
+            </div>
+
+            <div class="route-body">
+              <div class="live-strip" id="routeLive"></div>
+              <div class="section-row">
+                <h2>Stops</h2>
+                <span class="muted" id="routeStopCount">8 stops</span>
+              </div>
+              <div class="timeline" id="routeTimeline"></div>
+              <button class="btn btn--primary btn--block" id="btnRideRoute">Plan a trip on this line</button>
+              <p class="fine-print">Times are estimated from live bus positions in this prototype.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             TAB BAR
+             ============================================================ -->
+        <nav class="tabbar" aria-label="Main navigation">
+          <button class="tab is-active" data-view="home">
+            <svg class="icon"><use href="#i-map"/></svg><span>Home</span>
+          </button>
+          <button class="tab" data-view="routes">
+            <svg class="icon"><use href="#i-route"/></svg><span>Routes</span>
+          </button>
+          <button class="tab" data-view="timetable">
+            <svg class="icon"><use href="#i-clock"/></svg><span>Times</span>
+          </button>
+          <button class="tab" data-view="saved">
+            <svg class="icon"><use href="#i-heart"/></svg><span>Saved</span>
+          </button>
+          <button class="tab" data-view="more">
+            <svg class="icon"><use href="#i-grid"/></svg><span>More</span>
+          </button>
+        </nav>
+
+        <!-- ============================================================
+             OVERLAYS
+             ============================================================ -->
+        <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+        <div class="bottom-sheet" id="stopSheet" role="dialog" aria-modal="true" aria-label="Stop details">
+          <div class="sheet-grab"><span></span></div>
+          <div id="stopSheetBody"></div>
+        </div>
+
+        <div class="bottom-sheet" id="notifSheet" role="dialog" aria-modal="true" aria-label="Notifications">
+          <div class="sheet-grab"><span></span></div>
+          <div class="sheet-head sheet-head--sheet">
+            <div>
+              <h2>Notifications</h2>
+              <p id="notifMeta">2 unread</p>
+            </div>
+            <button class="icon-btn icon-btn--plain" data-close-sheet="notifSheet" aria-label="Close notifications">
+              <svg class="icon"><use href="#i-close"/></svg>
+            </button>
+          </div>
+          <div class="notif-list" id="notifList"></div>
+          <button class="link-btn notif-clear" id="btnClearNotif">Clear all notifications</button>
+        </div>
+
+        <div class="bottom-sheet bottom-sheet--tall" id="pickerSheet" role="dialog" aria-modal="true" aria-label="Choose a stop">
+          <div class="sheet-grab"><span></span></div>
+          <div class="sheet-head sheet-head--sheet">
+            <div>
+              <h2 id="pickerTitle">Choose a starting point</h2>
+              <p>Search all 14 campus stops</p>
+            </div>
+            <button class="icon-btn icon-btn--plain" data-close-sheet="pickerSheet" aria-label="Close stop picker">
+              <svg class="icon"><use href="#i-close"/></svg>
+            </button>
+          </div>
+          <div class="search-field">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input id="pickerSearch" type="search" placeholder="Search stops, faculties, hostels" autocomplete="off">
+          </div>
+          <div class="picker-list" id="pickerList"></div>
+        </div>
+
+        <!-- push-style arrival alert -->
+        <div class="push-toast" id="pushToast" role="status" aria-live="polite">
+          <div class="push-toast__head">
+            <span class="push-toast__app"><span class="brand-mark brand-mark--sm"><svg class="icon"><use href="#i-bus"/></svg></span> QuickUKM</span>
+            <span>now</span>
+          </div>
+          <strong id="pushTitle">Line A is almost here</strong>
+          <p id="pushBody">Your bus is 2 stops away from KTHO.</p>
+        </div>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/map.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
