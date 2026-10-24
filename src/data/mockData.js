@@ -77,7 +77,7 @@ export const LINES = [
     loop: true,
     loopTotal: 30,
     path: 'M290,88 L290,205 L320,300 L250,330 L320,300 L290,205 L290,88',
-    description: 'FST ⇄ FPER express shuttle (return service)',
+    description: 'FST ⇄ FPER express bus (return service)',
   },
 ];
 

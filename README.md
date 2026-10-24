@@ -1,4 +1,4 @@
-# QuickUKM — UKM Campus Shuttle (Prototype)
+# QuickUKM — UKM Campus Bus (Prototype)
 
 A mobile-first frontend prototype of a campus bus app for UKM, built with React + Vite.
 All data (buses, arrivals, schedules) is **simulated** — no backend, no login, no real GPS.
@@ -20,7 +20,8 @@ npm run dev
 - **Routes** — from/to selectors with swap button, quick picks, direct & transfer options,
   per-stop times and walking tips. Pick a route and hit **Start Navigation** for a simulated
   step-by-step journey: walk to the stop, board, ride stop-by-stop, alight and walk to the
-  destination, with map progress, remaining time, Next Step and Exit Navigation.
+  destination, with map progress, remaining time, Next Step and Exit Navigation. Drag the
+  handle on the bottom sheet to collapse it or expand it to half/full screen.
 - **Timetable** — filter by Zon (A–D), expandable cards with next departures per stop.
 - **Favourites** — saved trips persist across page switches (localStorage), tap one to plan it.
 - **Arrival Alerts** — simulated notification cards, master on/off switch, "simulate a

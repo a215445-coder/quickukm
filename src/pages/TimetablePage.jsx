@@ -19,8 +19,13 @@ export default function TimetablePage() {
             aria-selected={filter === f.id}
             className={`f-chip ${filter === f.id ? 'active' : ''}`}
             style={
-              filter === f.id && f.id !== 'all'
-                ? { background: LINES.find((l) => l.id === f.id).color }
+              filter === f.id
+                ? {
+                    background:
+                      f.id === 'all'
+                        ? 'var(--primary)'
+                        : LINES.find((l) => l.id === f.id).color,
+                  }
                 : undefined
             }
             onClick={() => setFilter(f.id)}

@@ -1,5 +1,5 @@
 /* ============================================================
-   QuickUKM — campus shuttle prototype stylesheet
+   QuickUKM — campus bus prototype stylesheet
    Mobile-first, MyRapid-inspired public-transit design language
    ============================================================ */
 
@@ -81,9 +81,36 @@ svg {
   align-items: center;
   justify-content: space-between;
   padding: calc(20px + env(safe-area-inset-top)) 16px 10px;
-  background: rgba(242, 244, 248, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(
+    to bottom,
+    rgba(242, 244, 248, 0.55) 0%,
+    rgba(242, 244, 248, 0.42) 52%,
+    rgba(242, 244, 248, 0.22) 82%,
+    rgba(242, 244, 248, 0) 100%
+  );
+}
+
+.topbar-blur {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    rgba(0, 0, 0, 0.92) 45%,
+    rgba(0, 0, 0, 0.68) 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    rgba(0, 0, 0, 0.92) 45%,
+    rgba(0, 0, 0, 0.68) 78%,
+    transparent 100%
+  );
 }
 
 .brand {
@@ -580,6 +607,7 @@ svg {
   margin: 12px -16px 0;
   padding: 2px 16px 10px;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
   scrollbar-width: none;
 }
 
@@ -976,19 +1004,37 @@ svg {
 }
 
 .nav-screen {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 170px 70px at 12% 62%, rgba(203, 227, 208, 0.65), transparent 70%),
+    radial-gradient(ellipse 140px 60px at 88% 80%, rgba(203, 227, 208, 0.5), transparent 70%),
+    #ddede4;
 }
 
 .nav-map {
-  position: relative;
-  flex: 0 0 44%;
-  min-height: 180px;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   overflow: hidden;
   background: #ddede4;
+}
+
+.nav-screen.sheet-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.nav-screen.sheet-dragging .nav-map {
+  pointer-events: none;
+}
+
+.nav-screen.sheet-dragging .nav-handle {
+  cursor: grabbing;
 }
 
 .nav-map .campus-svg {
@@ -1049,26 +1095,127 @@ svg {
 }
 
 .nav-panel {
-  position: relative;
-  z-index: 3;
-  flex: 1 1 auto;
-  min-height: 0;
-  margin-top: -22px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  height: calc(56% + 22px);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: #fff;
   border-radius: 24px 24px 0 0;
   box-shadow: 0 -12px 30px rgba(14, 26, 51, 0.16);
   padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  transition: height 0.32s cubic-bezier(0.22, 0.8, 0.2, 1);
+  will-change: height;
 }
 
+.nav-screen.sheet-dragging .nav-panel {
+  transition: none;
+}
+
+/* the invisible handle is taller than the visible bar to make dragging easier */
 .nav-handle {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  margin: -8px 0 -8px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.nav-handle::before {
+  content: "";
   width: 38px;
   height: 4px;
   border-radius: 999px;
   background: #d8dee9;
-  margin: 9px auto 7px;
+}
+
+.nav-panel.is-collapsed .nav-phases,
+.nav-panel.is-collapsed .nav-progress,
+.nav-panel.is-collapsed .nav-instruction,
+.nav-panel.is-collapsed .nav-next-hint,
+.nav-panel.is-collapsed .nav-scroll,
+.nav-panel.is-collapsed .nav-actions {
+  display: none;
+}
+
+.nav-compact {
+  display: none;
+  align-items: center;
+  gap: 10px;
   flex: none;
+  padding-top: 2px;
+}
+
+.nav-panel.is-collapsed .nav-compact {
+  display: flex;
+}
+
+.nav-compact-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.nav-compact-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-compact-copy b {
+  display: block;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-compact-copy small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-compact-time {
+  flex: none;
+  text-align: right;
+  color: var(--primary);
+}
+
+.nav-compact-time b {
+  display: block;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.nav-compact-time small {
+  display: block;
+  margin-top: 2px;
+  font-size: 8.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 
 .nav-phases {
@@ -2019,6 +2166,43 @@ svg {
 .empty p {
   font-size: 12.5px;
   margin-top: 4px;
+}
+
+/* ---------- bottom progressive blur ---------- */
+
+.bottom-blur {
+  position: sticky;
+  bottom: 0;
+  z-index: 35;
+  flex: none;
+  height: 150px;
+  margin-top: -150px;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(242, 244, 248, 0.18),
+    rgba(242, 244, 248, 0)
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 0%,
+    rgba(0, 0, 0, 0.9) 35%,
+    rgba(0, 0, 0, 0.4) 68%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to top,
+    #000 0%,
+    rgba(0, 0, 0, 0.9) 35%,
+    rgba(0, 0, 0, 0.4) 68%,
+    transparent 100%
+  );
+}
+
+.app-shell.navigating .bottom-blur {
+  display: none;
 }
 
 /* ---------- bottom navigation ---------- */

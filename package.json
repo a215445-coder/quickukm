@@ -2,7 +2,7 @@
   "name": "quickukm",
   "private": true,
   "version": "0.1.0",
-  "description": "QuickUKM — UKM campus shuttle frontend prototype (React + Vite)",
+  "description": "QuickUKM — UKM campus bus frontend prototype (React + Vite)",
   "type": "module",
   "scripts": {
     "dev": "vite",

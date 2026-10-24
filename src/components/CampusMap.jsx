@@ -34,6 +34,16 @@ const ROADS = [
   'M250,330 L230,430 L140,415',
 ];
 
+// Extra roads below the base campus drawing, revealed when the nav sheet
+// is collapsed and the map fills the whole screen.
+const NAV_ROADS = [
+  'M140,415 L140,560 L60,650',
+  'M230,430 L230,620 L330,700',
+  'M95,330 L95,540 L40,620',
+  'M320,300 L360,480 L360,700',
+  'M0,520 L140,560 L380,530',
+];
+
 // Focus the map on the stops and end points used by the active journey.
 function navViewBox(points) {
   if (!points || !points.length) return '0 0 380 460';
@@ -69,12 +79,12 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
     <svg
       className={`campus-svg ${nav ? 'nav-campus-svg' : ''}`}
       viewBox={nav ? navViewBox(nav.focusPoints) : '0 0 380 460'}
-      preserveAspectRatio={nav ? 'xMidYMid slice' : 'xMidYMid meet'}
+      preserveAspectRatio={nav ? 'xMidYMin meet' : 'xMidYMid meet'}
       role="img"
-      aria-label={nav ? 'Step-by-step route map' : 'Stylised UKM campus shuttle map'}
+      aria-label={nav ? 'Step-by-step route map' : 'Stylised UKM campus bus map'}
     >
       <defs>
-        <linearGradient id="mapBg" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="mapBg" x1="0" y1="0" x2="0" y2="460" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#EAF4EC" />
           <stop offset="1" stopColor="#DDEDE4" />
         </linearGradient>
@@ -83,7 +93,7 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
         </filter>
       </defs>
 
-      <rect x="-200" y="-200" width="780" height="860" fill="url(#mapBg)" />
+      <rect x="-200" y="-200" width="780" height="1500" fill="url(#mapBg)" />
 
       {/* greenery */}
       <ellipse cx="15" cy="55" rx="26" ry="13" fill="#CBE3D0" opacity="0.7" />
@@ -97,17 +107,38 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
       <ellipse cx="25" cy="402" rx="22" ry="11" fill="#BFDFF2" />
       <ellipse cx="25" cy="402" rx="15" ry="7" fill="#A8D4EE" />
 
+      {/* extended campus scenery for the full-screen navigation map */}
+      {nav && (
+        <g>
+          <ellipse cx="40" cy="530" rx="55" ry="28" fill="#CBE3D0" opacity="0.7" />
+          <ellipse cx="330" cy="555" rx="60" ry="30" fill="#CBE3D0" opacity="0.7" />
+          <ellipse cx="180" cy="640" rx="80" ry="34" fill="#CBE3D0" opacity="0.7" />
+          <ellipse cx="55" cy="755" rx="40" ry="20" fill="#CBE3D0" opacity="0.7" />
+          <ellipse cx="325" cy="790" rx="50" ry="25" fill="#CBE3D0" opacity="0.7" />
+          <ellipse cx="295" cy="690" rx="30" ry="15" fill="#BFDFF2" />
+          <ellipse cx="295" cy="690" rx="20" ry="9" fill="#A8D4EE" />
+        </g>
+      )}
+
       {/* roads: casing + surface */}
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
         <g stroke="#DDE4EE" strokeWidth="7">
           {ROADS.map((d) => (
             <path key={d} d={d} />
           ))}
+          {nav &&
+            NAV_ROADS.map((d) => (
+              <path key={d} d={d} />
+            ))}
         </g>
         <g stroke="#FBFCFE" strokeWidth="4.6">
           {ROADS.map((d) => (
             <path key={d} d={d} />
           ))}
+          {nav &&
+            NAV_ROADS.map((d) => (
+              <path key={d} d={d} />
+            ))}
         </g>
       </g>
 

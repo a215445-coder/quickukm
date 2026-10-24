@@ -126,6 +126,7 @@ export default function App() {
   return (
     <div className={`app-shell ${navRoute ? 'navigating' : ''}`}>
       <header className="topbar">
+        <div className="topbar-blur" aria-hidden="true" />
         {tab === 'home' ? (
           <div className="brand">
             <div className="brand-logo">
@@ -133,7 +134,7 @@ export default function App() {
             </div>
             <div>
               <h1>QuickUKM</h1>
-              <p>UKM Campus Shuttle</p>
+              <p>UKM Campus Bus</p>
             </div>
           </div>
         ) : (
@@ -179,6 +180,7 @@ export default function App() {
         )}
       </main>
 
+      <div className="bottom-blur" aria-hidden="true" />
       <BottomNav active={tab} onSelect={setTab} />
 
       {navRoute && (

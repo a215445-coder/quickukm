@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Bus,
   CircleCheck,
@@ -21,6 +21,14 @@ const PHASES = [
   { key: 'ride', label: 'Ride', Icon: Navigation },
   { key: 'arrive', label: 'Arrive', Icon: Flag },
 ];
+
+const SNAP_ORDER = ['collapsed', 'half', 'current', 'full'];
+const COLLAPSED_HEIGHT = 108;
+const FLING_PROJECTION_MS = 90;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 function pointOf(stop) {
   return { x: stop.x, y: stop.y };
@@ -284,8 +292,117 @@ export default function NavigationView({ route, onExit }) {
     else setIndex((i) => i + 1);
   };
 
+  const screenRef = useRef(null);
+  const dragRef = useRef(null);
+  const heightRef = useRef(null);
+  const [screenH, setScreenH] = useState(0);
+  const [sheetH, setSheetH] = useState(null);
+  const [snap, setSnap] = useState('current');
+  const [dragging, setDragging] = useState(false);
+
+  // Sheet heights: collapsed peek, half screen, the current layout, and near full-screen.
+  const snaps = useMemo(() => {
+    if (!screenH) return null;
+    return {
+      collapsed: Math.min(COLLAPSED_HEIGHT, Math.round(screenH * 0.3)),
+      half: Math.round(screenH * 0.5),
+      current: Math.min(Math.round(screenH * 0.9), Math.round(screenH * 0.56 + 22)),
+      full: Math.round(screenH * 0.9),
+    };
+  }, [screenH]);
+
+  useLayoutEffect(() => {
+    const el = screenRef.current;
+    if (!el) return undefined;
+    const measure = () => setScreenH(el.clientHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!snaps || dragging) return;
+    const height = snaps[snap];
+    heightRef.current = height;
+    setSheetH(height);
+  }, [snaps, snap, dragging]);
+
+  const startDrag = (e) => {
+    if (!snaps || dragRef.current) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    const startH = heightRef.current ?? snaps[snap];
+    dragRef.current = {
+      id: e.pointerId,
+      startY: e.clientY,
+      startH,
+      lastY: e.clientY,
+      lastT: performance.now(),
+      velocity: 0,
+    };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer capture unavailable */
+    }
+    setDragging(true);
+  };
+
+  const moveDrag = (e) => {
+    const drag = dragRef.current;
+    if (!drag || !snaps || e.pointerId !== drag.id) return;
+    e.preventDefault();
+    const now = performance.now();
+    const dt = Math.max(1, now - drag.lastT);
+    drag.velocity = (drag.lastY - e.clientY) / dt;
+    drag.lastY = e.clientY;
+    drag.lastT = now;
+    const nextH = clamp(
+      drag.startH + (drag.startY - e.clientY),
+      snaps.collapsed,
+      snaps.full
+    );
+    heightRef.current = nextH;
+    setSheetH(nextH);
+  };
+
+  const endDrag = (e) => {
+    const drag = dragRef.current;
+    if (!drag || !snaps) return;
+    if (e?.pointerId != null && e.pointerId !== drag.id) return;
+    dragRef.current = null;
+    if (e?.pointerId != null) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* already released */
+      }
+    }
+
+    const releaseY = typeof e?.clientY === 'number' ? e.clientY : drag.lastY;
+    const height = clamp(
+      drag.startH + (drag.startY - releaseY),
+      snaps.collapsed,
+      snaps.full
+    );
+    // ignore a flick that ended more than 120ms ago, then project momentum
+    const velocity = performance.now() - drag.lastT > 120 ? 0 : drag.velocity;
+    const projected = clamp(height + velocity * FLING_PROJECTION_MS, snaps.collapsed, snaps.full);
+    const target = SNAP_ORDER.reduce(
+      (best, key) =>
+        Math.abs(snaps[key] - projected) < Math.abs(snaps[best] - projected) ? key : best,
+      'collapsed'
+    );
+
+    setDragging(false);
+    setSnap(target);
+    heightRef.current = snaps[target];
+    setSheetH(snaps[target]);
+  };
+
   return (
-    <div className="nav-screen">
+    <div ref={screenRef} className={`nav-screen ${dragging ? 'sheet-dragging' : ''}`}>
       <div className="nav-map">
         <CampusMap navigation={nav} />
         <span className="nav-live">
@@ -293,8 +410,43 @@ export default function NavigationView({ route, onExit }) {
         </span>
       </div>
 
-      <section className="nav-panel" aria-live="polite">
-        <span className="nav-handle" />
+      <section
+        className={`nav-panel ${snap === 'collapsed' ? 'is-collapsed' : ''}`}
+        style={sheetH != null ? { height: `${sheetH}px` } : undefined}
+        aria-live="polite"
+      >
+        <div
+          className="nav-handle"
+          role="separator"
+          aria-label="Drag to resize navigation panel"
+          aria-orientation="horizontal"
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
+        />
+
+        <div className="nav-compact">
+          <span className="nav-compact-icon" style={iconStyle}>
+            <StepIcon size={18} />
+          </span>
+          <div className="nav-compact-copy">
+            <b>{step.title}</b>
+            <small>{step.nextHint}</small>
+          </div>
+          <span className="nav-compact-time">
+            {isLast ? (
+              <CircleCheck size={20} />
+            ) : (
+              <>
+                <b>{step.remainingMins}</b>
+                <small>min</small>
+              </>
+            )}
+          </span>
+        </div>
+
         <ol className="nav-phases">
           {PHASES.map(({ key, label, Icon }, i) => (
             <li
