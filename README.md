@@ -18,7 +18,9 @@ npm run dev
 - **Home** — stylised campus map with animated simulated buses, tap any stop for live
   (simulated) arrivals, floating quick trip planner, nearby stops, popular routes.
 - **Routes** — from/to selectors with swap button, quick picks, direct & transfer options,
-  per-stop times and walking tips.
+  per-stop times and walking tips. Pick a route and hit **Start Navigation** for a simulated
+  step-by-step journey: walk to the stop, board, ride stop-by-stop, alight and walk to the
+  destination, with map progress, remaining time, Next Step and Exit Navigation.
 - **Timetable** — filter by Zon (A–D), expandable cards with next departures per stop.
 - **Favourites** — saved trips persist across page switches (localStorage), tap one to plan it.
 - **Arrival Alerts** — simulated notification cards, master on/off switch, "simulate a

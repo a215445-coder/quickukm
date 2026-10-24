@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Bell, Bus } from 'lucide-react';
 import BottomNav from './components/BottomNav';
+import NavigationView from './components/NavigationView';
 import HomePage from './pages/HomePage';
 import RoutesPage from './pages/RoutesPage';
 import TimetablePage from './pages/TimetablePage';
@@ -62,6 +63,7 @@ export default function App() {
   const [favs, setFavs] = useState(() => loadJSON(FAV_KEY, DEFAULT_FAVS));
   const [alertsOn, setAlertsOn] = useState(() => loadJSON(ALERT_KEY, true));
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [navRoute, setNavRoute] = useState(null);
 
   useEffect(() => {
     try {
@@ -81,7 +83,14 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
+    /* inside the iPhone preview frame the app scrolls in .app-shell */
+    document.querySelector('.app-shell')?.scrollTo({ top: 0 });
   }, [tab]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    document.querySelector('.app-shell')?.scrollTo({ top: 0 });
+  }, [navRoute]);
 
   useEffect(() => {
     if (tab === 'alerts') setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
@@ -115,7 +124,7 @@ export default function App() {
   const meta = PAGE_META[tab];
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${navRoute ? 'navigating' : ''}`}>
       <header className="topbar">
         {tab === 'home' ? (
           <div className="brand">
@@ -141,7 +150,14 @@ export default function App() {
 
       <main className="page">
         {tab === 'home' && <HomePage onTrip={runTrip} onNavigate={setTab} />}
-        {tab === 'routes' && <RoutesPage plan={plan} favs={favs} onToggleFav={toggleFav} />}
+        {tab === 'routes' && (
+          <RoutesPage
+            plan={plan}
+            favs={favs}
+            onToggleFav={toggleFav}
+            onStartNavigation={setNavRoute}
+          />
+        )}
         {tab === 'timetable' && <TimetablePage />}
         {tab === 'favourites' && (
           <FavouritesPage
@@ -164,6 +180,10 @@ export default function App() {
       </main>
 
       <BottomNav active={tab} onSelect={setTab} />
+
+      {navRoute && (
+        <NavigationView route={navRoute} onExit={() => setNavRoute(null)} />
+      )}
     </div>
   );
 }

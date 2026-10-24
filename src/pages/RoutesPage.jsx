@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRightLeft, Bus, Clock, Footprints, Repeat, Search, Star } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  Bus,
+  Clock,
+  Footprints,
+  Navigation,
+  Repeat,
+  Search,
+  Star,
+} from 'lucide-react';
 import StopSelect from '../components/StopSelect';
 import { LINE_BY_ID, STOPS_BY_ID, findRoutes, nextDepartures } from '../data/mockData';
 
@@ -40,13 +49,20 @@ function walkTip(stopId) {
   return STOPS_BY_ID[stopId]?.walk || null;
 }
 
-function RouteCard({ route }) {
+function RouteCard({ route, recommended, onStartNavigation }) {
+  const startBtn = (
+    <button className="btn-primary start-nav-btn" onClick={() => onStartNavigation?.(route)}>
+      <Navigation size={15} /> Start Navigation
+    </button>
+  );
+
   if (route.kind === 'direct') {
     const line = LINE_BY_ID[route.lineId];
     const from = STOPS_BY_ID[route.fromId];
     const to = STOPS_BY_ID[route.toId];
     return (
-      <article className="card route-card">
+      <article className={`card route-card ${recommended ? 'recommended' : ''}`}>
+        {recommended && <span className="rec-badge">Recommended</span>}
         <div className="route-card-head">
           <span className="line-pill" style={{ background: line.color }}>
             {line.name}
@@ -60,6 +76,7 @@ function RouteCard({ route }) {
             <small> min</small>
           </span>
         </div>
+        {startBtn}
         <Steps stops={route.stops} lineId={line.id} start end />
         <div className="route-foot">
           {walkTip(from.id) && (
@@ -80,7 +97,8 @@ function RouteCard({ route }) {
   const l1 = LINE_BY_ID[route.seg1.lineId];
   const l2 = LINE_BY_ID[route.seg2.lineId];
   return (
-    <article className="card route-card">
+    <article className={`card route-card ${recommended ? 'recommended' : ''}`}>
+      {recommended && <span className="rec-badge">Recommended</span>}
       <div className="route-card-head">
         <span className="line-pill" style={{ background: l1.color }}>
           {l1.name}
@@ -96,6 +114,7 @@ function RouteCard({ route }) {
           <small> min</small>
         </span>
       </div>
+      {startBtn}
       <Steps stops={route.seg1.stops} lineId={l1.id} start />
       <div className="transfer-row">
         <Repeat size={12} /> Transfer at {STOPS_BY_ID[route.via].name} · ~5 min wait
@@ -117,7 +136,7 @@ function RouteCard({ route }) {
   );
 }
 
-export default function RoutesPage({ plan, favs, onToggleFav }) {
+export default function RoutesPage({ plan, favs, onToggleFav, onStartNavigation }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [searched, setSearched] = useState(false);
@@ -205,8 +224,13 @@ export default function RoutesPage({ plan, favs, onToggleFav }) {
               <Star size={18} fill={isFav ? 'currentColor' : 'none'} />
             </button>
           </div>
-          {results.map((r) => (
-            <RouteCard key={r.id} route={r} />
+          {results.map((r, i) => (
+            <RouteCard
+              key={r.id}
+              route={r}
+              recommended={i === 0}
+              onStartNavigation={onStartNavigation}
+            />
           ))}
           {results.length === 0 && (
             <div className="empty">
