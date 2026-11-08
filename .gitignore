@@ -2,3 +2,11 @@ node_modules/
 dist/
 .DS_Store
 *.local
+*.jpe
+
+# Xcode build output / user state
+ios/build/
+ios/build-sim/
+ios/DerivedData/
+**/xcuserdata/
+**/*.xcuserstate
