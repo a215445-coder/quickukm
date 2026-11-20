@@ -32,7 +32,7 @@ function RouteCard({ route, onStartNavigation }) {
       <div className="route-card-head">
         {legs.map((leg) => {
           const line = LINE_BY_ID[leg.lineId];
-          return <span key={line.id} className="line-pill" style={{ background: line.color }}>{line.name}</span>;
+          return <span key={line.id} className="line-pill" aria-label={`Route ${line.id}`} style={{ background: line.color }}>{line.id}</span>;
         })}
         <span className="route-meta">{direct ? 'Direct' : '1 transfer'}</span>
         <span className="route-meta">{stopCount} stops</span>

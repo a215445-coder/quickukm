@@ -360,6 +360,13 @@ svg {
   font-weight: 700;
 }
 
+.tracker-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px 0;
+}
+
 .shuttle-stop-list {
   margin-top: 12px;
   color: var(--ink-2);

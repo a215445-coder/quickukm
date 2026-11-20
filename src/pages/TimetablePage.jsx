@@ -9,11 +9,12 @@ export default function TimetablePage() {
   return (
     <>
       <div className="filter-chips" role="group" aria-label="Filter by line">
-        {[{ id: 'all', name: 'All lines' }, ...LINES].map((line) => (
+        {[{ id: 'all' }, ...LINES].map((line) => (
           <button key={line.id} className={`f-chip ${filter === line.id ? 'active' : ''}`}
+            aria-label={line.id === 'all' ? 'All routes' : `Route ${line.id}`}
             aria-pressed={filter === line.id} onClick={() => setFilter(line.id)}
             style={filter === line.id && line.color ? { background: line.color } : undefined}>
-            {line.name}
+            {line.id === 'all' ? 'All routes' : line.id}
           </button>
         ))}
       </div>
@@ -23,7 +24,7 @@ export default function TimetablePage() {
       {lines.map((line) => (
         <article className="card tt-card" key={line.id}>
           <div className="tt-head">
-            <span className="line-pill" style={{ background: line.color }}>{line.name}</span>
+            <span className="line-pill" style={{ background: line.color }}>{line.id}</span>
             <div className="grow"><h3>{line.description}</h3><p>{line.days} · {line.first}–{line.last} MYT</p></div>
           </div>
           <div className="tt-meta"><span><Clock size={12} /> Typical interval: {line.freq} min</span></div>

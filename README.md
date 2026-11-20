@@ -15,6 +15,8 @@ The route lists and typical hours are a snapshot checked on 20 November 2026:
 [Zon 2](https://moovitapp.com/index/en/public_transit-line-ZON_2-Kuala_Lumpur-1082-1248041-775192-0),
 [Zon 3](https://moovitapp.com/index/en/public_transit-line-zon_3_4-Kuala_Lumpur-1082-1248041-204608213-0)
 and [Zon 4](https://moovitapp.com/index/en/public_transit-line-zon_3_4-Kuala_Lumpur-1082-1248041-204608213-1).
+QuickUKM’s numeric badges show route numbers (1–4). Use the university tracker
+to identify the individual vehicle currently assigned to a route.
 For live locations and arrivals, UKM provides [MyUKM Smart Bus](https://www.ukm.my/kelestarian/sdgukm2024/sdg11/11-4-2/).
 
 **Live demo:** <https://a215445-coder.github.io/quickukm/>

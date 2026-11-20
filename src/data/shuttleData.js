@@ -3,6 +3,7 @@
 import campus from './campusGeography.json';
 
 export const OFFICIAL_BUS_APP = 'https://play.google.com/store/apps/details?id=com.myukmbus.mobile.my_ukm_smart_bus';
+export const OFFICIAL_BUS_APP_IOS = 'https://apps.apple.com/my/app/myukm-smart-bus/id6503329422';
 export const UKM_TRANSPORT_INFO = 'https://www.ukm.my/kelestarian/sdgukm2024/sdg11/11-4-2/';
 export const STOPS = campus.stops;
 export const STOPS_BY_ID = Object.fromEntries(STOPS.map((stop) => [stop.id, stop]));
@@ -78,7 +79,7 @@ export function tripSummary(fromId, toId) {
   const direct = route.kind === 'direct';
   const first = LINE_BY_ID[direct ? route.lineId : route.seg1.lineId];
   return {
-    lineName: direct ? first.name : `${first.name} + ${LINE_BY_ID[route.seg2.lineId].name}`,
+    lineName: direct ? `Route ${first.id}` : `Routes ${first.id} + ${route.seg2.lineId}`,
     lineColor: first.color,
     stops: direct ? route.stops.length - 1 : route.seg1.stops.length + route.seg2.stops.length - 2,
   };

@@ -25,17 +25,17 @@ export function buildJourney(route) {
       ...(index ? [{
         type: 'transfer', phase: 'board', kicker: 'Transfer',
         title: `Change at ${board.short}`, detail: 'Check the next departure before transferring.',
-        nextHint: `Board ${leg.line.name}`, leg: { stopId: board.id }, nextBus: leg,
+        nextHint: `Board route ${leg.line.id}`, leg: { stopId: board.id }, nextBus: leg,
       }] : []),
       {
         type: 'board', phase: 'board', kicker: 'Board', leg,
-        title: `Board ${leg.line.name} at ${board.short}`,
+        title: `Board route ${leg.line.id} at ${board.short}`,
         detail: board.name, nextHint: `Next listed stop: ${STOPS_BY_ID[leg.directionStopId].short}`,
       },
       ...leg.stopIds.slice(1).map((id, position, rest) => {
         const isAlight = position === rest.length - 1;
         return {
-          type: 'ride', phase: 'ride', kicker: leg.line.name, leg, isAlight,
+          type: 'ride', phase: 'ride', kicker: `Route ${leg.line.id}`, leg, isAlight,
           stopIndex: position + 1, remainingStops: rest.length - position - 1,
           lineColor: leg.line.color,
           title: isAlight ? `Alight at ${alight.short}` : `Stop: ${STOPS_BY_ID[id].short}`,
@@ -54,7 +54,7 @@ export function buildJourney(route) {
   });
 
   const paths = legs.flatMap((leg) => roadPaths(leg.stopIds).map((path) => ({
-    ...path, color: leg.line.color, lineName: leg.line.name,
+    ...path, color: leg.line.color,
   })));
   const focusPoints = [
     ...legs.flatMap((leg) => leg.stopIds.map((id) => stopPoint(STOPS_BY_ID[id]))).filter(Boolean),

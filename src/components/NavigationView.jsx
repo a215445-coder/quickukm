@@ -96,7 +96,7 @@ function BoardBody({ step }) {
     <div className="nav-board-card">
       <div className="nav-line-row">
         <span className="line-pill" style={{ background: line.color }}>
-          {line.name}
+          {line.id}
         </span>
         <span className="nav-towards">towards {direction.short}</span>
         <span className="nav-eta-pill">
@@ -122,7 +122,7 @@ function RideBody({ step }) {
     <div className="nav-ride-card">
       <div className="nav-line-row">
         <span className="line-pill" style={{ background: line.color }}>
-          {line.name}
+          {line.id}
         </span>
         <span className="nav-towards">towards {direction.short}</span>
         <span className="nav-stops-left">
@@ -155,7 +155,7 @@ function TransferBody({ step }) {
         <>
           <div className="nav-line-row" style={{ marginTop: 8 }}>
             <span className="line-pill" style={{ background: nextBus.line.color }}>
-              {nextBus.line.name}
+              {nextBus.line.id}
             </span>
             <span className="nav-towards">towards {direction.short}</span>
             <span className="nav-eta-pill">
@@ -170,7 +170,7 @@ function TransferBody({ step }) {
 }
 
 function ArrivedBody({ journey }) {
-  const lineNames = journey.legs.map((leg) => leg.line.name).join(' + ');
+  const lineNames = journey.legs.map((leg) => leg.line.id).join(' + ');
   return (
     <div className="nav-arrived-card">
       <span className="nav-arrived-icon"><CircleCheck size={22} /></span>

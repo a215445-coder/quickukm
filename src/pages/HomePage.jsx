@@ -49,7 +49,7 @@ export default function HomePage({ onTrip, onNavigate }) {
             {linesAtStop(stop.id).map((line) => (
               <div className="arrival-row" key={line.id}>
                 <span className="line-dot" style={{ background: line.color }} />
-                <b>{line.name}</b><span className="muted">{line.days}</span>
+                <b>{line.id}</b><span className="muted">{line.days}</span>
               </div>
             ))}
             <div className="sheet-foot">
@@ -61,10 +61,10 @@ export default function HomePage({ onTrip, onNavigate }) {
       </section>
       <MapAttribution />
 
-      <div className="legend">
+      <div className="legend" role="group" aria-label="Campus shuttle route numbers">
         {LINES.map((line) => (
-          <span className="legend-chip" key={line.id}>
-            <span className="line-dot" style={{ background: line.color }} /> {line.name}
+          <span className="legend-chip" key={line.id} aria-label={`Route ${line.id}`}>
+            <span className="line-dot" style={{ background: line.color }} /> {line.id}
           </span>
         ))}
       </div>
@@ -82,7 +82,7 @@ export default function HomePage({ onTrip, onNavigate }) {
               document.getElementById('campus-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}>
               <div className="nearby-head"><b>{STOPS_BY_ID[id].name}</b></div>
-              <span className="nearby-sub">{linesAtStop(id).map((line) => line.name).join(' · ')}</span>
+              <span className="nearby-sub">{linesAtStop(id).map((line) => line.id).join(' · ')}</span>
             </button>
           ))}
         </div>
