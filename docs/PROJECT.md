@@ -16,50 +16,41 @@ stops are not obvious; and missing a bus can make students late for class.
 ## Solution
 
 QuickUKM is a mobile campus bus companion that puts the map, planner, timetable
-and arrival reminders in one place. The prototype focuses on a clear, friendly
+and a link to UKM’s live tracker in one place. The prototype focuses on a clear, friendly
 mobile experience that works on the web and as an installed iPhone app.
 
 ## Core features
 
-1. **Live campus map** — simulated buses moving on a stylised UKM map, with every
-   bus stop marked and tappable for next arrivals.
-2. **Trip planner** — choose origin and destination, compare direct/transfer
-   options, see walking time and the next bus.
-3. **Step-by-step navigation** — walk to the stop, board, ride stop-by-stop and
-   walk to the destination, with remaining time and a progress map.
-4. **Timetable** — Zon A–D services, next departures and stop-by-stop schedules.
-5. **Favourites** — save frequent trips such as hostel → faculty or
-   hostel → library; stored locally.
-6. **Arrival reminders** — simulated arrival and service notifications with a
-   master alert switch.
-7. **iPhone app** — the same frontend bundled offline in a SwiftUI/WKWebView
-   shell, installed through Xcode.
+1. **Campus map** — real Bangi roads, mapped stops and approximate stop areas.
+2. **Trip planner** — compare direct and one-transfer trips based on published stop sequences.
+3. **Route preview** — manually step through boarding, stops, transfer and alighting.
+4. **Timetable** — Zon 1–4 regular hours, stop orders and source links.
+5. **Favourites** — save trips on the device.
+6. **Service updates** — link to UKM’s MyUKM Smart Bus for live data.
+7. **iPhone app** — the same frontend bundled offline in a SwiftUI/WKWebView shell.
 
-## Demo flow (for the presentation)
+## Presentation flow
 
-1. Open QuickUKM on the phone; the home map shows live (simulated) buses.
-2. Tap **Plan a trip**, choose a hostel (e.g. FFAR) and a destination (e.g. FST).
-3. Review the route options, next bus and walking times.
-4. Start navigation and show the step-by-step ride.
-5. Open the bell to show an arrival alert.
-6. Switch to Favourites and show a saved hostel → faculty trip.
-7. Open Timetable and compare Zon A–D departures.
+1. Open the campus map and tap a shuttle stop.
+2. Choose KPZ → FTSM and compare the listed options.
+3. Open the route preview and step through the itinerary.
+4. Save the trip and open it in Favourites.
+5. Open Timetable and compare Zon 1 weekday hours with Zon 3 daily hours.
+6. Open the bell to show where to check current bus locations and arrivals.
 
 ## Technology
 
 - **Web:** React 18 + Vite 6, custom CSS, lucide-react icons
-- **Data:** local simulated routes/stops/schedules (`src/data/`)
-- **Persistence:** `localStorage` for favourites and alert preference
+- **Data:** published stop orders and regular hours with OpenStreetMap geography (`src/data/`)
+- **Persistence:** `localStorage` for favourites
 - **iPhone:** SwiftUI + WKWebView; the built web app is inlined into one HTML file
   so it works offline
 - **PWA:** manifest, icons and add-to-home metadata for the hosted web version
 
 ## Limitations
 
-- Bus locations, ETAs and notifications are simulated; there is no real GPS or
-  UKM bus API.
-- No login, backend, push notifications or live disruption feed.
-- Walking times and stop positions are approximate for demonstration.
+- Live vehicle locations, exact departures and disruptions are available through the linked services.
+- Route overlays are approximate. Stops without verified geometry remain visible in the itinerary.
 - The iPhone build uses free personal-team signing, which expires after 7 days.
 
 ## Possible next steps

@@ -5,18 +5,16 @@ import {
   Clock,
   CornerUpRight,
   Flag,
-  Footprints,
   MapPin,
   Navigation,
   Repeat,
   X,
 } from 'lucide-react';
 import CampusMap, { MapAttribution } from './CampusMap';
-import { STOPS_BY_ID, getStopArrivals } from '../data/mockData';
-import { buildJourney } from '../data/navigation';
+import { STOPS_BY_ID } from '../data/shuttleData';
+import { buildJourney, stopPoint } from '../data/navigation';
 
 const PHASES = [
-  { key: 'walk', label: 'Walk', Icon: Footprints },
   { key: 'board', label: 'Board', Icon: Bus },
   { key: 'ride', label: 'Ride', Icon: Navigation },
   { key: 'arrive', label: 'Arrive', Icon: Flag },
@@ -30,22 +28,15 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function pointOf(stop) {
-  return { x: stop.x, y: stop.y };
-}
-
 function markerFor(step, journey) {
-  if (step.type === 'walk') {
-    return step.leg.key === 'to-destination' ? pointOf(journey.toStop) : journey.origin;
-  }
   if (step.type === 'board') {
-    return pointOf(STOPS_BY_ID[step.leg.boardId]);
+    return stopPoint(STOPS_BY_ID[step.leg.boardId]);
   }
   if (step.type === 'ride') {
-    return pointOf(STOPS_BY_ID[step.leg.stopIds[step.stopIndex]]);
+    return stopPoint(STOPS_BY_ID[step.leg.stopIds[step.stopIndex]]);
   }
   if (step.type === 'transfer') {
-    return pointOf(STOPS_BY_ID[step.leg.stopId]);
+    return stopPoint(STOPS_BY_ID[step.leg.stopId]);
   }
   return journey.destination;
 }
@@ -97,45 +88,10 @@ function StopTimeline({ leg, currentIndex = null }) {
   );
 }
 
-function WalkBody({ step }) {
-  return (
-    <div className="nav-walk-card">
-      <div className="nav-leg-head">
-        <Footprints size={15} />
-        <b>Walking route</b>
-        <span className="nav-leg-time">
-          {step.leg.distance} m · {step.leg.mins} min
-        </span>
-      </div>
-      <ol className="nav-walk-steps">
-        {step.directions.map((d, i) => (
-          <li
-            key={d.label}
-            className={i === 0 ? 'start' : i === step.directions.length - 1 ? 'end' : ''}
-          >
-            <span className="nav-walk-dot" />
-            <span className="nav-walk-copy">
-              <b>{d.label}</b>
-              <small>{d.note}</small>
-            </span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
 function BoardBody({ step }) {
   const line = step.leg.line;
   const direction = STOPS_BY_ID[step.leg.directionStopId];
   const board = STOPS_BY_ID[step.leg.boardId];
-  const arrival = getStopArrivals(step.leg.boardId).find((a) => a.lineId === line.id);
-  const arrivalLabel = arrival
-    ? arrival.eta < 0.8
-      ? 'Arriving now'
-      : `Next bus ~${Math.round(arrival.eta)} min`
-    : 'Simulated service';
-
   return (
     <div className="nav-board-card">
       <div className="nav-line-row">
@@ -144,10 +100,11 @@ function BoardBody({ step }) {
         </span>
         <span className="nav-towards">towards {direction.short}</span>
         <span className="nav-eta-pill">
-          <Clock size={10} /> {arrivalLabel}
+          <Clock size={10} /> {line.days}
         </span>
       </div>
       <p className="nav-line-desc">{line.description}</p>
+      <p className="map-note">The map shows approximate road sections. Follow the published stop list below.</p>
       <p className="nav-board-at">
         <MapPin size={12} /> Board at {board.name}
       </p>
@@ -170,14 +127,14 @@ function RideBody({ step }) {
         <span className="nav-towards">towards {direction.short}</span>
         <span className="nav-stops-left">
           {step.isAlight
-            ? 'Alight now'
+            ? 'Alighting stop'
             : `${step.remainingStops} stop${step.remainingStops === 1 ? '' : 's'} to go`}
         </span>
       </div>
       <StopTimeline leg={step.leg} currentIndex={step.stopIndex} />
       {step.isAlight && (
         <div className="nav-alight-banner">
-          <Flag size={15} /> Alight at {alight.short} · use the front door
+          <Flag size={15} /> Alight at {alight.short}
         </div>
       )}
     </div>
@@ -202,7 +159,7 @@ function TransferBody({ step }) {
             </span>
             <span className="nav-towards">towards {direction.short}</span>
             <span className="nav-eta-pill">
-              <Clock size={10} /> ~{step.leg.mins} min wait
+              <Clock size={10} /> {nextBus.line.days}
             </span>
           </div>
           <StopTimeline leg={nextBus} />
@@ -213,39 +170,12 @@ function TransferBody({ step }) {
 }
 
 function ArrivedBody({ journey }) {
-  const walked = journey.legs
-    .filter((l) => l.kind === 'walk')
-    .reduce((sum, l) => sum + l.distance, 0);
-  const lineNames = [
-    ...new Set(journey.legs.filter((l) => l.kind === 'bus').map((l) => l.line.name)),
-  ].join(' + ');
-
+  const lineNames = journey.legs.map((leg) => leg.line.name).join(' + ');
   return (
-    <>
-      <div className="nav-arrived-card">
-        <span className="nav-arrived-icon">
-          <CircleCheck size={22} />
-        </span>
-        <div>
-          <b>Destination reached</b>
-          <p>{journey.toStop.name}</p>
-        </div>
-      </div>
-      <div className="nav-summary-grid">
-        <div>
-          <span>Journey</span>
-          <b>~{journey.totalMins} min</b>
-        </div>
-        <div>
-          <span>Walked</span>
-          <b>{walked} m</b>
-        </div>
-        <div>
-          <span>Bus</span>
-          <b>{lineNames || '—'}</b>
-        </div>
-      </div>
-    </>
+    <div className="nav-arrived-card">
+      <span className="nav-arrived-icon"><CircleCheck size={22} /></span>
+      <div><b>{journey.toStop.name}</b><p>{lineNames}</p></div>
+    </div>
   );
 }
 
@@ -255,30 +185,21 @@ export default function NavigationView({ route, onExit }) {
   const step = journey.steps[index];
   const isLast = index === journey.steps.length - 1;
   const activePhase = PHASES.findIndex((p) => p.key === step.phase);
-  const progress = journey.totalMins
-    ? Math.min(100, Math.max(3, ((journey.totalMins - step.remainingMins) / journey.totalMins) * 100))
-    : 0;
+  const progress = ((index + 1) / journey.steps.length) * 100;
 
   const nav = {
     busPaths: journey.busPaths,
-    walkPaths: journey.walkPaths,
     focusPoints: journey.focusPoints,
     marker: markerFor(step, journey),
-    board: pointOf(journey.fromStop),
-    alight: pointOf(journey.toStop),
+    board: stopPoint(journey.fromStop),
+    alight: stopPoint(journey.toStop),
     destination: journey.destination,
-    activeWalk:
-      step.type === 'walk' ? step.leg.key : step.type === 'arrived' ? 'to-destination' : null,
+
   };
 
-  const StepIcon =
-    step.type === 'walk'
-      ? Footprints
-      : step.type === 'transfer'
-        ? Repeat
-        : step.type === 'arrived'
-          ? CircleCheck
-          : Bus;
+  const StepIcon = step.type === 'transfer'
+    ? Repeat
+    : step.type === 'arrived' ? CircleCheck : step.type === 'board' ? Bus : Navigation;
 
   const iconStyle =
     step.type === 'arrived'
@@ -406,7 +327,7 @@ export default function NavigationView({ route, onExit }) {
       <div className="nav-map">
         <CampusMap navigation={nav} />
         <span className="nav-live">
-          <span className="pulse-dot" /> Demo navigation
+          <span className="pulse-dot" /> Route preview
         </span>
         <MapAttribution />
       </div>
@@ -441,8 +362,8 @@ export default function NavigationView({ route, onExit }) {
               <CircleCheck size={20} />
             ) : (
               <>
-                <b>{step.remainingMins}</b>
-                <small>min</small>
+                <b>{index + 1}</b>
+                <small>step</small>
               </>
             )}
           </span>
@@ -483,8 +404,8 @@ export default function NavigationView({ route, onExit }) {
               <CircleCheck size={25} className="nav-done-icon" />
             ) : (
               <>
-                <b>{step.remainingMins}</b>
-                <span>min left</span>
+                <b>{index + 1}</b>
+                <span>step</span>
               </>
             )}
           </div>
@@ -498,7 +419,6 @@ export default function NavigationView({ route, onExit }) {
         </div>
 
         <div className="nav-scroll">
-          {step.type === 'walk' && <WalkBody step={step} />}
           {step.type === 'board' && <BoardBody step={step} />}
           {step.type === 'ride' && <RideBody step={step} />}
           {step.type === 'transfer' && <TransferBody step={step} />}
@@ -507,7 +427,7 @@ export default function NavigationView({ route, onExit }) {
 
         <div className="nav-actions">
           <button className="nav-exit-btn" onClick={onExit}>
-            <X size={15} strokeWidth={2.6} /> Exit Navigation
+            <X size={15} strokeWidth={2.6} /> Exit Preview
           </button>
           <button className="btn-primary nav-next-btn" onClick={next}>
             {isLast ? <CircleCheck size={17} /> : <Navigation size={16} />}

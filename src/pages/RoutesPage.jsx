@@ -2,136 +2,51 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRightLeft,
   Bus,
-  Clock,
-  Footprints,
   Navigation,
   Repeat,
   Search,
   Star,
 } from 'lucide-react';
 import StopSelect from '../components/StopSelect';
-import { LINE_BY_ID, STOPS_BY_ID, findRoutes, nextDepartures } from '../data/mockData';
+import { LINE_BY_ID, STOPS_BY_ID, SUGGESTED_TRIPS, findRoutes } from '../data/shuttleData';
 
-const SUGGESTIONS = [
-  { fromId: 'fssk', toId: 'fst' },
-  { fromId: 'ktho', toId: 'library' },
-  { fromId: 'fst', toId: 'fpend' },
-  { fromId: 'kpz', toId: 'ftsm' },
-];
-
-function Steps({ stops, lineId, start, end }) {
+function Steps({ stops }) {
   return (
     <ol className="route-steps">
-      {stops.map((sid, i) => {
-        const s = STOPS_BY_ID[sid];
-        const cls = [
-          start && i === 0 ? 'start' : '',
-          end && i === stops.length - 1 ? 'end' : '',
-        ]
-          .filter(Boolean)
-          .join(' ');
-        const time = i === 0 ? null : nextDepartures(lineId, sid, 1)[0];
-        return (
-          <li key={i} className={cls}>
-            <span className="step-dot" />
-            <span className="step-name">
-              {s.name}
-              {time && <small>{time}</small>}
-            </span>
-          </li>
-        );
-      })}
+      {stops.map((id, index) => (
+        <li key={index} className={index === 0 ? 'start' : index === stops.length - 1 ? 'end' : ''}>
+          <span className="step-dot" />
+          <span className="step-name">{STOPS_BY_ID[id].name}</span>
+        </li>
+      ))}
     </ol>
   );
 }
 
-function walkTip(stopId) {
-  return STOPS_BY_ID[stopId]?.walk || null;
-}
-
-function RouteCard({ route, recommended, onStartNavigation }) {
-  const startBtn = (
-    <button className="btn-primary start-nav-btn" onClick={() => onStartNavigation?.(route)}>
-      <Navigation size={15} /> Start Navigation
-    </button>
-  );
-
-  if (route.kind === 'direct') {
-    const line = LINE_BY_ID[route.lineId];
-    const from = STOPS_BY_ID[route.fromId];
-    const to = STOPS_BY_ID[route.toId];
-    return (
-      <article className={`card route-card ${recommended ? 'recommended' : ''}`}>
-        {recommended && <span className="rec-badge">Recommended</span>}
-        <div className="route-card-head">
-          <span className="line-pill" style={{ background: line.color }}>
-            {line.name}
-          </span>
-          <span className="route-meta">Direct</span>
-          <span className="route-meta">
-            <Clock size={12} /> Every {line.freq} min
-          </span>
-          <span className="route-dur">
-            {route.mins}
-            <small> min</small>
-          </span>
-        </div>
-        {startBtn}
-        <Steps stops={route.stops} lineId={line.id} start end />
-        <div className="route-foot">
-          {walkTip(from.id) && (
-            <span>
-              <Footprints size={12} /> {walkTip(from.id)}
-            </span>
-          )}
-          {to.id !== from.id && walkTip(to.id) && (
-            <span>
-              <Footprints size={12} /> {walkTip(to.id)}
-            </span>
-          )}
-        </div>
-      </article>
-    );
-  }
-
-  const l1 = LINE_BY_ID[route.seg1.lineId];
-  const l2 = LINE_BY_ID[route.seg2.lineId];
+function RouteCard({ route, onStartNavigation }) {
+  const direct = route.kind === 'direct';
+  const legs = direct ? [route] : [route.seg1, route.seg2];
+  const stopCount = legs.reduce((count, leg) => count + leg.stops.length - 1, 0);
   return (
-    <article className={`card route-card ${recommended ? 'recommended' : ''}`}>
-      {recommended && <span className="rec-badge">Recommended</span>}
+    <article className="card route-card">
       <div className="route-card-head">
-        <span className="line-pill" style={{ background: l1.color }}>
-          {l1.name}
-        </span>
-        <span className="route-meta">
-          <Repeat size={12} />
-        </span>
-        <span className="line-pill" style={{ background: l2.color }}>
-          {l2.name}
-        </span>
-        <span className="route-dur">
-          {route.mins}
-          <small> min</small>
-        </span>
+        {legs.map((leg) => {
+          const line = LINE_BY_ID[leg.lineId];
+          return <span key={line.id} className="line-pill" style={{ background: line.color }}>{line.name}</span>;
+        })}
+        <span className="route-meta">{direct ? 'Direct' : '1 transfer'}</span>
+        <span className="route-meta">{stopCount} stops</span>
       </div>
-      {startBtn}
-      <Steps stops={route.seg1.stops} lineId={l1.id} start />
-      <div className="transfer-row">
-        <Repeat size={12} /> Transfer at {STOPS_BY_ID[route.via].name} · ~5 min wait
-      </div>
-      <Steps stops={route.seg2.stops.slice(1)} lineId={l2.id} end />
-      <div className="route-foot">
-        {walkTip(route.fromId) && (
-          <span>
-            <Footprints size={12} /> {walkTip(route.fromId)}
-          </span>
-        )}
-        {walkTip(route.toId) && (
-          <span>
-            <Footprints size={12} /> {walkTip(route.toId)}
-          </span>
-        )}
-      </div>
+      <button className="btn-primary start-nav-btn" onClick={() => onStartNavigation(route)}>
+        <Navigation size={15} /> Preview Route
+      </button>
+      <Steps stops={legs[0].stops} />
+      {!direct && (
+        <>
+          <div className="transfer-row"><Repeat size={12} /> Transfer at {STOPS_BY_ID[route.via].name}</div>
+          <Steps stops={legs[1].stops} />
+        </>
+      )}
     </article>
   );
 }
@@ -161,9 +76,9 @@ export default function RoutesPage({ plan, favs, onToggleFav, onStartNavigation 
     setTo(from);
   };
   const isFav = from && to ? favs.includes(`${from}:${to}`) : false;
-  const applySuggestion = (s) => {
-    setFrom(s.fromId);
-    setTo(s.toId);
+  const applySuggestion = ({ fromId, toId }) => {
+    setFrom(fromId);
+    setTo(toId);
     setSearched(true);
   };
 
@@ -195,9 +110,9 @@ export default function RoutesPage({ plan, favs, onToggleFav, onStartNavigation 
         <section className="section">
           <h2 className="section-title">Quick picks</h2>
           <div className="chips">
-            {SUGGESTIONS.map((s) => (
-              <button key={`${s.fromId}-${s.toId}`} className="chip" onClick={() => applySuggestion(s)}>
-                <Bus size={13} /> {STOPS_BY_ID[s.fromId].short} → {STOPS_BY_ID[s.toId].short}
+            {SUGGESTED_TRIPS.map(([fromId, toId]) => (
+              <button key={`${fromId}-${toId}`} className="chip" onClick={() => applySuggestion({ fromId, toId })}>
+                <Bus size={13} /> {STOPS_BY_ID[fromId].short} → {STOPS_BY_ID[toId].short}
               </button>
             ))}
           </div>
@@ -224,11 +139,10 @@ export default function RoutesPage({ plan, favs, onToggleFav, onStartNavigation 
               <Star size={18} fill={isFav ? 'currentColor' : 'none'} />
             </button>
           </div>
-          {results.map((r, i) => (
+          {results.map((r) => (
             <RouteCard
               key={r.id}
               route={r}
-              recommended={i === 0}
               onStartNavigation={onStartNavigation}
             />
           ))}

@@ -1,11 +1,5 @@
 import { Bus, ChevronRight, Star } from 'lucide-react';
-import { STOPS_BY_ID, tripSummary } from '../data/mockData';
-
-const SUGGESTED = [
-  ['fst', 'fpend'],
-  ['kpz', 'ftsm'],
-  ['fssk', 'fpi'],
-];
+import { STOPS_BY_ID, SUGGESTED_TRIPS, tripSummary } from '../data/shuttleData';
 
 export default function FavouritesPage({ favs, onToggleFav, onOpenTrip, onBrowse }) {
   const rows = favs
@@ -16,7 +10,7 @@ export default function FavouritesPage({ favs, onToggleFav, onOpenTrip, onBrowse
       return { key, f, t, sum };
     })
     .filter(Boolean);
-  const suggestions = SUGGESTED.filter(([f, t]) => !favs.includes(`${f}:${t}`));
+  const suggestions = SUGGESTED_TRIPS.filter(([f, t]) => !favs.includes(`${f}:${t}`));
 
   return (
     <>
@@ -45,7 +39,7 @@ export default function FavouritesPage({ favs, onToggleFav, onOpenTrip, onBrowse
                   {STOPS_BY_ID[f].name} <span className="fav-arrow">→</span> {STOPS_BY_ID[t].name}
                 </span>
                 <span className="fav-sub">
-                  ≈ {sum.mins} min · {sum.lineName} · {sum.stops} stops
+                  {sum.lineName} · {sum.stops} stops
                 </span>
               </span>
               <span
@@ -79,7 +73,7 @@ export default function FavouritesPage({ favs, onToggleFav, onOpenTrip, onBrowse
                     {STOPS_BY_ID[f].name} <span className="fav-arrow">→</span> {STOPS_BY_ID[t].name}
                   </span>
                   <span className="fav-sub">
-                    ≈ {sum.mins} min · {sum.lineName}
+                    {sum.lineName} · {sum.stops} stops
                   </span>
                 </span>
                 <span

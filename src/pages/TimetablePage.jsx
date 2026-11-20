@@ -1,101 +1,45 @@
 import { useState } from 'react';
-import { ChevronDown, Clock } from 'lucide-react';
-import { LINES, STOPS_BY_ID, fmtTime, nextDepartures } from '../data/mockData';
-
-const FILTERS = [{ id: 'all', label: 'All lines' }, ...LINES.map((l) => ({ id: l.id, label: l.name }))];
+import { Clock, ExternalLink } from 'lucide-react';
+import { LINES, STOPS_BY_ID } from '../data/shuttleData';
 
 export default function TimetablePage() {
   const [filter, setFilter] = useState('all');
-  const [open, setOpen] = useState('A');
-  const lines = filter === 'all' ? LINES : LINES.filter((l) => l.id === filter);
+  const lines = filter === 'all' ? LINES : LINES.filter((line) => line.id === filter);
 
   return (
     <>
-      <div className="filter-chips" role="tablist" aria-label="Filter by line">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            role="tab"
-            aria-selected={filter === f.id}
-            className={`f-chip ${filter === f.id ? 'active' : ''}`}
-            style={
-              filter === f.id
-                ? {
-                    background:
-                      f.id === 'all'
-                        ? 'var(--primary)'
-                        : LINES.find((l) => l.id === f.id).color,
-                  }
-                : undefined
-            }
-            onClick={() => setFilter(f.id)}
-          >
-            {f.label}
+      <div className="filter-chips" role="group" aria-label="Filter by line">
+        {[{ id: 'all', name: 'All lines' }, ...LINES].map((line) => (
+          <button key={line.id} className={`f-chip ${filter === line.id ? 'active' : ''}`}
+            aria-pressed={filter === line.id} onClick={() => setFilter(line.id)}
+            style={filter === line.id && line.color ? { background: line.color } : undefined}>
+            {line.name}
           </button>
         ))}
       </div>
-
-      {lines.map((line) => {
-        const firstStop = STOPS_BY_ID[line.stopIds[0]];
-        const lastStop = STOPS_BY_ID[line.stopIds[line.stopIds.length - 1]];
-        const isOpen = open === line.id;
-        return (
-          <article
-            key={line.id}
-            className={`card tt-card ${isOpen ? 'open' : ''}`}
-            onClick={() => setOpen(isOpen ? null : line.id)}
-          >
-            <div className="tt-head">
-              <span className="line-pill" style={{ background: line.color }}>
-                {line.name}
-              </span>
-              <div className="grow">
-                <h3>{line.description}</h3>
-                <p>
-                  {firstStop.name} ⇄ {lastStop.name}
-                </p>
-              </div>
-              <ChevronDown size={17} className="tt-chev" />
-            </div>
-            <div className="tt-meta">
-              <span>
-                <Clock size={12} /> Every {line.freq} min
-              </span>
-              <span>
-                {fmtTime(line.first)} – {fmtTime(line.last)}
-              </span>
-            </div>
-            <p className="tt-label">Next departures · {firstStop.name}</p>
-            <div className="time-chips">
-              {nextDepartures(line.id, line.stopIds[0], 4).map((t, i) => (
-                <span className="time-chip" key={i}>
-                  {t}
-                </span>
-              ))}
-            </div>
-            {isOpen && (
-              <div className="tt-stops">
-                {line.stopIds.map((sid) => (
-                  <div className="tt-stop-row" key={sid}>
-                    <span>{STOPS_BY_ID[sid].name}</span>
-                    <span className="times">
-                      {nextDepartures(line.id, sid, 2).map((t, k) => (
-                        <span className="time-chip" key={k}>
-                          {t}
-                        </span>
-                      ))}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-        );
-      })}
-
-      <p className="muted" style={{ fontSize: 11, textAlign: 'center', marginTop: 14 }}>
-        Schedules are simulated for this prototype.
+      <p className="map-note">
+        Moovit’s regular service hours in Malaysia time. Check the linked timetable for individual departures, breaks and changes.
       </p>
+      {lines.map((line) => (
+        <article className="card tt-card" key={line.id}>
+          <div className="tt-head">
+            <span className="line-pill" style={{ background: line.color }}>{line.name}</span>
+            <div className="grow"><h3>{line.description}</h3><p>{line.days} · {line.first}–{line.last} MYT</p></div>
+          </div>
+          <div className="tt-meta"><span><Clock size={12} /> Typical interval: {line.freq} min</span></div>
+          <a className="source-link" href={line.source} target="_blank" rel="noreferrer">
+            <ExternalLink size={13} /> Check published timetable
+          </a>
+          <details className="shuttle-stop-list">
+            <summary>Show published stop order</summary>
+            <ol>
+              {line.stopIds.map((id, index) => (
+                <li key={index}>{STOPS_BY_ID[id].name}{STOPS_BY_ID[id].code && ` · ${STOPS_BY_ID[id].code}`}</li>
+              ))}
+            </ol>
+          </details>
+        </article>
+      ))}
     </>
   );
 }

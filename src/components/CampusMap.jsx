@@ -1,22 +1,23 @@
-import { LINES, STOPS } from '../data/mockData';
+import { LINES, STOPS, roadPaths } from '../data/shuttleData';
 import campusMapSvg from '../assets/ukm-bangi-map.svg?raw';
 
 // Keep the map available in the single-file offline iPhone bundle.
 const campusMapUrl = `data:image/svg+xml,${encodeURIComponent(campusMapSvg)}`;
 
-// Simulated buses: one per line (+ a second bus on Demo A), animated along
-// each line's path with SMIL animateMotion
-const BUSES = [
-  { lineId: 'A', begin: '0s', dur: '52s' },
-  { lineId: 'A', begin: '-27s', dur: '52s' },
-  { lineId: 'B', begin: '-12s', dur: '42s' },
-  { lineId: 'C', begin: '-32s', dur: '60s' },
-  { lineId: 'D', begin: '-8s', dur: '38s' },
-];
+const CAMPUS_VIEW = '0 -115 500 510';
+const MAP_STOPS = STOPS.filter((stop) => stop.location);
+const LABELLED_STOPS = new Set([
+  'kpz', 'ftsm', 'fkab', 'fpend', 'pusanika', 'dectar', 'krk', 'ktho', 'fssk',
+  'library', 'fep', 'fst', 'kkm', 'driving',
+]);
+const LINE_PATHS = LINES.map((line) => ({
+  ...line,
+  routePath: roadPaths(line.stopIds).map(({ d }) => d).join(' '),
+}));
 
 // Focus the map on the stops and end points used by the active journey.
 function navViewBox(points) {
-  if (!points || !points.length) return '0 0 380 460';
+  if (!points || !points.length) return CAMPUS_VIEW;
   const pad = 42;
   let minX = Math.min(...points.map((p) => p.x)) - pad;
   let maxX = Math.max(...points.map((p) => p.x)) + pad;
@@ -58,20 +59,20 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
   return (
     <svg
       className={`campus-svg ${nav ? 'nav-campus-svg' : ''}`}
-      viewBox={nav ? navViewBox(nav.focusPoints) : '10 62 375 334'}
+      viewBox={nav ? navViewBox(nav.focusPoints) : CAMPUS_VIEW}
       preserveAspectRatio={nav ? 'xMidYMin meet' : 'xMidYMid meet'}
       role={nav ? 'img' : 'group'}
-      aria-label={nav ? 'Step-by-step route map' : 'UKM Bangi campus map with demo shuttle routes'}
+      aria-label={nav ? 'Step-by-step route map' : 'UKM Bangi campus map with listed shuttle stops'}
     >
       <rect x="-200" y="-200" width="780" height="1500" fill="#eff0e5" />
-      <image href={campusMapUrl} x="-45" y="-40" width="470" height="540" />
+      <image href={campusMapUrl} x="-45" y="-120" width="575" height="620" />
 
       {/* route lines */}
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {LINES.map((l) => (
+        {LINE_PATHS.map((l) => (
           <g key={l.id}>
-            <path d={l.path} stroke="#fff" strokeWidth="4.5" opacity={nav ? 0.22 : 0.8} />
-            <path d={l.path} stroke={l.color} strokeWidth="2.5" opacity={nav ? 0.16 : 0.73} />
+            <path d={l.routePath} stroke="#fff" strokeWidth="4.5" opacity={nav ? 0.22 : 0.8} />
+            <path d={l.routePath} stroke={l.color} strokeWidth="2.5" strokeDasharray="5 3" opacity={nav ? 0.16 : 0.73} />
           </g>
         ))}
       </g>
@@ -79,34 +80,23 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
       {/* navigation route overlay */}
       {nav && (
         <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-          {nav.busPaths.map((p) => (
-            <g key={p.lineName + p.d}>
+          {nav.busPaths.map((p, index) => (
+            <g key={index}>
               <path d={p.d} stroke="#fff" strokeWidth="8.5" opacity="0.95" />
-              <path d={p.d} stroke={p.color} strokeWidth="5" />
+              <path d={p.d} stroke={p.color} strokeWidth="5" strokeDasharray="7 4" />
             </g>
-          ))}
-          {nav.walkPaths.map((p) => (
-            <path
-              key={p.key}
-              className={`nav-walk-path ${nav.activeWalk === p.key ? 'active' : ''}`}
-              d={p.d}
-              stroke="#2B59FF"
-              strokeWidth="3.2"
-              strokeDasharray="0.5 8"
-              opacity={nav.activeWalk === p.key ? 1 : 0.42}
-            />
           ))}
         </g>
       )}
 
       {/* stops */}
-      {STOPS.map((s) => (
+      {MAP_STOPS.map((s) => (
         <g
           key={s.id}
           className={`stop ${selectedStop === s.id ? 'selected' : ''} ${nav ? 'nav-static' : ''}`}
           role={nav ? undefined : 'button'}
           tabIndex={nav ? undefined : 0}
-          aria-label={nav ? undefined : `Show ${s.name} arrivals`}
+          aria-label={nav ? undefined : `Show ${s.name} stop details`}
           onClick={nav ? undefined : () => onSelectStop?.(s.id)}
           onKeyDown={nav ? undefined : (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
@@ -123,11 +113,11 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
             </circle>
           )}
           <circle cx={s.x} cy={s.y} r="6" fill="#fff" stroke="#8796ab" strokeWidth="1.5" />
-          <circle cx={s.x} cy={s.y} r="2.5" fill={s.mappedStop ? "#2B59FF" : "#fff"} />
-          <text x={s.x + (s.lx || 0)} y={s.y + (s.ly || 0)} className="stop-label" textAnchor="middle">
-            {s.short}
-          </text>
-          <title>{s.name} · {s.mappedStop ? "Mapped bus stop" : "Demo pickup near this landmark"}</title>
+          <circle cx={s.x} cy={s.y} r="2.5" fill={s.location === "mapped" ? "#2B59FF" : "#fff"} />
+          {(LABELLED_STOPS.has(s.id) || selectedStop === s.id) && (
+            <text x={s.x} y={s.y - 10} className="stop-label" textAnchor="middle">{s.short}</text>
+          )}
+          <title>{s.name} · {s.location === "mapped" ? "Mapped stop" : "Approximate stop area"}</title>
         </g>
       ))}
 
@@ -171,21 +161,6 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
           <circle r="2.3" fill="#fff" />
         </g>
       )}
-
-      {/* buses (explore mode only) */}
-      {!nav &&
-        BUSES.map((b, idx) => {
-          const line = LINES.find((l) => l.id === b.lineId);
-          return (
-            <g key={idx} className="bus" pointerEvents="none">
-              <animateMotion dur={b.dur} begin={b.begin} repeatCount="indefinite" path={line.path} />
-              <rect x="-12.5" y="-6.5" width="25" height="17" rx="6" fill="rgba(14,26,51,0.22)" transform="translate(0,2)" />
-              <rect x="-12.5" y="-8.5" width="25" height="17" rx="6" fill={line.color} stroke="#fff" strokeWidth="2" />
-              <rect x="-8" y="-5.5" width="4.5" height="11" rx="1.8" fill="#fff" opacity="0.95" />
-              <rect x="-1" y="-5.5" width="4.5" height="11" rx="1.8" fill="#fff" opacity="0.95" />
-            </g>
-          );
-        })}
 
     </svg>
   );

@@ -9,43 +9,13 @@ import FavouritesPage from './pages/FavouritesPage';
 import AlertsPage from './pages/AlertsPage';
 
 const FAV_KEY = 'quickukm:favs';
-const ALERT_KEY = 'quickukm:alerts';
-const DEFAULT_FAVS = ['fssk:fst', 'ktho:library'];
-
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    kind: 'arrival',
-    lineId: 'A',
-    title: 'Bus A-14 arriving soon',
-    body: 'Demo A bus arriving at FST in about 3 min.',
-    time: 'Just now',
-    read: false,
-  },
-  {
-    id: 2,
-    kind: 'arrival',
-    lineId: 'C',
-    title: 'Bus C-02 arriving soon',
-    body: 'Demo C bus arriving at FPEND in about 7 min.',
-    time: '2 min ago',
-    read: false,
-  },
-  {
-    id: 3,
-    kind: 'service',
-    title: 'Service update · Demo B',
-    body: 'Demo B running about 5 min behind schedule near the main gate.',
-    time: '15 min ago',
-    read: false,
-  },
-];
+const DEFAULT_FAVS = [];
 
 const PAGE_META = {
-  routes: { title: 'Routes', sub: 'Plan a demo trip on UKM campus roads' },
-  timetable: { title: 'Timetable', sub: 'Simulated live schedules' },
+  routes: { title: 'Routes', sub: 'Plan a trip using published stop sequences' },
+  timetable: { title: 'Timetable', sub: 'Published regular service hours' },
   favourites: { title: 'Favourites', sub: 'Your saved trips' },
-  alerts: { title: 'Arrival Alerts', sub: 'Simulated notifications' },
+  alerts: { title: 'Service Updates', sub: 'UKM shuttle information' },
 };
 
 function loadJSON(key, fallback) {
@@ -61,8 +31,6 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const [plan, setPlan] = useState({ fromId: null, toId: null, nonce: 0 });
   const [favs, setFavs] = useState(() => loadJSON(FAV_KEY, DEFAULT_FAVS));
-  const [alertsOn, setAlertsOn] = useState(() => loadJSON(ALERT_KEY, true));
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [navRoute, setNavRoute] = useState(null);
 
   useEffect(() => {
@@ -72,14 +40,6 @@ export default function App() {
       /* storage unavailable — ignore */
     }
   }, [favs]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(ALERT_KEY, JSON.stringify(alertsOn));
-    } catch {
-      /* storage unavailable — ignore */
-    }
-  }, [alertsOn]);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -92,10 +52,6 @@ export default function App() {
     document.querySelector('.app-shell')?.scrollTo({ top: 0 });
   }, [navRoute]);
 
-  useEffect(() => {
-    if (tab === 'alerts') setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
-  }, [tab]);
-
   const runTrip = (fromId, toId) => {
     setPlan((p) => ({ fromId, toId, nonce: p.nonce + 1 }));
     setTab('routes');
@@ -104,23 +60,6 @@ export default function App() {
   const toggleFav = (key) =>
     setFavs((fs) => (fs.includes(key) ? fs.filter((k) => k !== key) : [key, ...fs]));
 
-  const dismissNotification = (id) => setNotifications((ns) => ns.filter((n) => n.id !== id));
-  const clearNotifications = () => setNotifications([]);
-  const simulateNotification = () =>
-    setNotifications((ns) => [
-      {
-        id: Date.now(),
-        kind: 'arrival',
-        lineId: 'D',
-        title: 'Bus D-03 arriving soon',
-        body: 'Demo D bus arriving at FTSM in about 5 min.',
-        time: 'Just now',
-        read: tab === 'alerts',
-      },
-      ...ns,
-    ]);
-
-  const unread = notifications.filter((n) => !n.read).length;
   const meta = PAGE_META[tab];
 
   return (
@@ -143,9 +82,8 @@ export default function App() {
             <p>{meta.sub}</p>
           </div>
         )}
-        <button className="bell-btn" onClick={() => setTab('alerts')} aria-label="Arrival alerts">
+        <button className="bell-btn" onClick={() => setTab('alerts')} aria-label="Service updates">
           <Bell size={20} />
-          {unread > 0 && <span className="badge">{unread}</span>}
         </button>
       </header>
 
@@ -168,16 +106,7 @@ export default function App() {
             onBrowse={() => setTab('routes')}
           />
         )}
-        {tab === 'alerts' && (
-          <AlertsPage
-            alertsOn={alertsOn}
-            onToggleAlerts={setAlertsOn}
-            notifications={notifications}
-            onDismiss={dismissNotification}
-            onClearAll={clearNotifications}
-            onSimulate={simulateNotification}
-          />
-        )}
+        {tab === 'alerts' && <AlertsPage />}
       </main>
 
       <div className="bottom-blur" aria-hidden="true" />

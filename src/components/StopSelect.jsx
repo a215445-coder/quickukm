@@ -1,4 +1,4 @@
-import { STOPS } from '../data/mockData';
+import { STOPS } from '../data/shuttleData';
 
 // Shared stop dropdown — dot: 'from' (green) or 'to' (red)
 export default function StopSelect({ value, onChange, placeholder, dot }) {

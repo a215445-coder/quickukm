@@ -4,9 +4,18 @@ A mobile-first campus bus companion prototype for international students at
 Universiti Kebangsaan Malaysia (UKM Bangi). The frontend is built with
 **React + Vite** and is wrapped as an **iPhone app** with SwiftUI + WKWebView.
 
-The offline Bangi map uses [OpenStreetMap](https://www.openstreetmap.org/#map=16/2.9255/101.778) roads, buildings and landmarks. Map geography in `src/assets/ukm-bangi-map.svg` and `src/data/campusGeography.json` is derived from [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) under the ODbL. Filled markers are mapped bus stops, and hollow markers indicate demo pickups near landmarks.
+The offline Bangi map uses roads, buildings and landmarks from
+[OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL).
+Solid markers indicate mapped stops. Hollow markers indicate approximate stop
+areas, and unlocated stops appear in the written itinerary only. Road overlays
+are estimates based on the mapped road network.
 
-Lines A–D, bus positions, ETAs, walking guidance, schedules and alerts are for demonstration. Check [GeoMapUKM](https://www.gis.ukm.my/) for official campus geography and UKM for current shuttle service.
+The route lists and typical hours are a snapshot checked on 20 November 2026:
+[Zon 1](https://moovitapp.com/index/en/public_transit-line-zon_1-Kuala_Lumpur-1082-1248041-204608212-0),
+[Zon 2](https://moovitapp.com/index/en/public_transit-line-ZON_2-Kuala_Lumpur-1082-1248041-775192-0),
+[Zon 3](https://moovitapp.com/index/en/public_transit-line-zon_3_4-Kuala_Lumpur-1082-1248041-204608213-0)
+and [Zon 4](https://moovitapp.com/index/en/public_transit-line-zon_3_4-Kuala_Lumpur-1082-1248041-204608213-1).
+For live locations and arrivals, UKM provides [MyUKM Smart Bus](https://www.ukm.my/kelestarian/sdgukm2024/sdg11/11-4-2/).
 
 **Live demo:** <https://a215445-coder.github.io/quickukm/>
 
@@ -16,15 +25,12 @@ Lines A–D, bus positions, ETAs, walking guidance, schedules and alerts are for
 
 ## Features
 
-- **Home** — UKM Bangi road map with simulated moving buses, quick trip
-  planner, route legend, nearby stops and popular routes.
-- **Routes** — from/to selection, swap, direct and transfer options, walking
-  times, per-stop timeline and a simulated **Start Navigation** flow with
-  step-by-step walking/boarding/riding guidance.
-- **Timetable** — filter by demo lines A–D, with expandable cards and sample departures.
-- **Favourites** — save trips; they persist in `localStorage`.
-- **Arrival Alerts** — simulated notification feed, master switch and a
-  "simulate a notification" demo button.
+- **Home** — campus map, shuttle zones, stop details and trip planning.
+- **Routes** — direct options and one-transfer planning using published stop orders,
+  with a manual route preview.
+- **Timetable** — regular service days, operating hours and links to published departures.
+- **Favourites** — save trips locally using the updated route data.
+- **Service Updates** — open UKM’s tracker for current bus information.
 - **iPhone app** — the whole frontend is bundled offline inside
   `ios/QuickUKM/www/index.html`; no server is required on the phone.
 
@@ -90,7 +96,7 @@ To refresh the bundled web app after editing the React source:
 │   ├── App.jsx             tabs, favourites, alerts, plan state
 │   ├── components/         map, navigation sheet, bottom nav, stop select
 │   ├── pages/              Home, Routes, Timetable, Favourites, Alerts
-│   ├── data/               simulated routes, stops and schedules
+│   ├── data/               published stop sequences, service hours and map geometry
 │   └── index.css           full mobile UI
 ├── public/                 PWA manifest and icons
 ├── ios/                    Xcode + WKWebView wrapper
@@ -107,10 +113,10 @@ To refresh the bundled web app after editing the React source:
 
 ## Notes
 
-- Prototype only: simulated data, no official UKM service, no real-time API.
+- QuickUKM is an independent student project and uses published reference data.
 - Visual direction is inspired by Malaysian transit apps such as MyRapid; the
   QuickUKM interface and assets are original.
-- Favourites and the alert switch are stored locally on each device.
+- Favourites are stored locally on each device.
 - The original single-page static prototype is preserved in the
   `legacy-static-site` branch for reference.
 

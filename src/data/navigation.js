@@ -1,285 +1,69 @@
-// QuickUKM — simulated turn-by-turn journey builder (no GPS / maps API)
+import { LINE_BY_ID, STOPS_BY_ID, roadPaths } from './shuttleData';
 
-import { LINE_BY_ID, STOPS_BY_ID, busRoadPoints, campusPath } from './mockData';
-
-const TRANSFER_MINS = 5;
-
-const DIRS = [
-  'east',
-  'south-east',
-  'south',
-  'south-west',
-  'west',
-  'north-west',
-  'north',
-  'north-east',
-];
-
-function walkMinutes(stop) {
-  const match = /(\d+)\s*min/i.exec(stop?.walk || '');
-  return match ? Number(match[1]) : 3;
-}
-
-function stopPoint(stop) {
-  return { x: stop.x, y: stop.y };
-}
-
-function compass(from, to) {
-  const deg = (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
-  return DIRS[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
-}
-
-function busLeg(lineId, stopIds, mins, boardId, alightId) {
-  const line = LINE_BY_ID[lineId];
-  return {
-    kind: 'bus',
-    lineId,
-    line,
-    stopIds,
-    mins,
-    boardId,
-    alightId,
-    directionStopId: stopIds[1] || alightId,
-  };
-}
-
-function walkLeg(key, from, to, stop, mins, title) {
-  const distance = Math.round(stop.walkMetres / 10) * 10;
-  return {
-    kind: 'walk',
-    key,
-    mins,
-    distance,
-    from,
-    to,
-    stopId: stop.id,
-    title,
-    compass: compass(from, to),
-  };
-}
-
-function buildSteps(legs) {
-  const steps = [{ type: 'walk', leg: legs[0], duration: legs[0].mins }];
-
-  legs.forEach((leg) => {
-    if (leg.kind === 'bus') {
-      const transitions = leg.stopIds.length - 1;
-      const perStop = transitions ? leg.mins / transitions : 0;
-      // the first ride interval is spent between boarding and the next stop
-      steps.push({ type: 'board', leg, duration: perStop });
-      for (let i = 1; i < leg.stopIds.length; i++) {
-        steps.push({
-          type: 'ride',
-          leg,
-          stopIndex: i,
-          remainingStops: transitions - i,
-          isAlight: i === transitions,
-          duration: i === transitions ? 0 : perStop,
-        });
-      }
-    } else if (leg.kind === 'transfer') {
-      steps.push({ type: 'transfer', leg, duration: leg.mins });
-    }
-  });
-
-  const lastWalk = legs[legs.length - 1];
-  steps.push({ type: 'walk', leg: lastWalk, duration: lastWalk.mins });
-  steps.push({ type: 'arrived', duration: 0 });
-  return steps;
-}
-
-function decorate(steps, legs, fromStop, toStop, walk1Mins, walk2Mins) {
-  const doorToDoor =
-    walk1Mins +
-    walk2Mins +
-    legs.filter((l) => l.kind === 'bus').reduce((sum, l) => sum + l.mins, 0) +
-    legs.filter((l) => l.kind === 'transfer').reduce((sum, l) => sum + l.mins, 0);
-
-  steps.forEach((step) => {
-    if (step.type === 'walk') {
-      const toBoard = step.leg.key === 'to-board';
-      if (toBoard) {
-        step.phase = 'walk';
-        step.kicker = 'Walk';
-        step.title = `Walk to ${fromStop.short} stop`;
-        step.detail = `Head ${step.leg.compass} · ${step.leg.distance} m · ${walk1Mins} min`;
-        step.nextHint = `Arrive at ${fromStop.short} and wait for your bus`;
-        step.directions = [
-          { label: `Start at the campus landmark`, note: `near ${fromStop.short}` },
-          { label: `Head ${step.leg.compass} towards the pickup`, note: `${step.leg.distance} m` },
-          { label: `Arrive at ${fromStop.name}`, note: `${walk1Mins} min walk` },
-        ];
-      } else {
-        step.phase = 'arrive';
-        step.kicker = 'Final walk';
-        step.title = `Walk to ${toStop.name}`;
-        step.detail = `Head ${step.leg.compass} · ${step.leg.distance} m · ${walk2Mins} min`;
-        step.nextHint = `You'll arrive at ${toStop.name}`;
-        step.directions = [
-          { label: `Leave the bus at ${toStop.short}`, note: 'Alight here' },
-          { label: `Head ${step.leg.compass} towards the landmark`, note: `${step.leg.distance} m` },
-          { label: `Arrive at ${toStop.name}`, note: `${walk2Mins} min walk` },
-        ];
-      }
-      return;
-    }
-
-    if (step.type === 'board') {
-      const line = step.leg.line;
-      const direction = STOPS_BY_ID[step.leg.directionStopId];
-      const alight = STOPS_BY_ID[step.leg.alightId];
-      step.phase = 'board';
-      step.kicker = 'At the stop';
-      step.title = `Board ${line.name} towards ${direction.short}`;
-      step.detail = `${STOPS_BY_ID[step.leg.boardId].name} · every ${line.freq} min`;
-      step.nextHint = `Ride ${step.leg.stopIds.length - 1} stop${
-        step.leg.stopIds.length === 2 ? '' : 's'
-      } and alight at ${alight.short}`;
-      return;
-    }
-
-    if (step.type === 'ride') {
-      const line = step.leg.line;
-      const alight = STOPS_BY_ID[step.leg.alightId];
-      const current = STOPS_BY_ID[step.leg.stopIds[step.stopIndex]];
-      step.phase = 'ride';
-      step.lineColor = line.color;
-      if (step.isAlight) {
-        const transferLeg = legs.find(
-          (l) => l.kind === 'transfer' && l.stopId === step.leg.alightId
-        );
-        step.kicker = `On ${line.name}`;
-        step.title = `Alight at ${alight.short}`;
-        step.detail = transferLeg
-          ? 'Transfer here for your next bus.'
-          : 'You have reached your demo stop.';
-        step.nextHint = transferLeg
-          ? `Change at ${alight.short}`
-          : `Walk ${walk2Mins} min to ${toStop.name}`;
-      } else {
-        step.kicker = `On ${line.name}`;
-        step.title = `Next stop · ${current.short}`;
-        step.detail = `Stay on ${step.remainingStops} more stop${
-          step.remainingStops === 1 ? '' : 's'
-        } — alight at ${alight.short}`;
-        step.nextHint = STOPS_BY_ID[step.leg.stopIds[step.stopIndex + 1]].short;
-      }
-      return;
-    }
-
-    if (step.type === 'transfer') {
-      const via = STOPS_BY_ID[step.leg.stopId];
-      const nextBus = legs.find(
-        (l) => l.kind === 'bus' && l.boardId === step.leg.stopId
-      );
-      const direction = nextBus ? STOPS_BY_ID[nextBus.directionStopId] : null;
-      step.phase = 'ride';
-      step.kicker = 'Transfer';
-      step.title = `Change at ${via.short}`;
-      step.detail = nextBus
-        ? `Wait ~${step.leg.mins} min for ${nextBus.line.name} towards ${direction.short}`
-        : `Wait ~${step.leg.mins} min for your next bus`;
-      step.nextHint = nextBus ? `Board ${nextBus.line.name} at ${via.short}` : 'Board your next bus';
-      step.nextBus = nextBus || null;
-      return;
-    }
-
-    step.phase = 'arrive';
-    step.kicker = 'Arrived';
-    step.title = `You're at ${toStop.name}`;
-    step.detail = `Trip complete · ${doorToDoor} min door to door`;
-    step.nextHint = 'Enjoy the rest of your day';
-  });
+export function stopPoint(stop) {
+  return stop?.location ? { x: stop.x, y: stop.y } : null;
 }
 
 export function buildJourney(route) {
   const fromStop = STOPS_BY_ID[route.fromId];
   const toStop = STOPS_BY_ID[route.toId];
-  const fromWalk = fromStop.walkPoints.slice().reverse();
-  const toWalk = toStop.walkPoints;
-  const [originX, originY] = fromWalk[0];
-  const [destinationX, destinationY] = toWalk.at(-1);
-  const origin = { x: originX, y: originY };
-  const destination = { x: destinationX, y: destinationY };
-  const walk1Mins = walkMinutes(fromStop);
-  const walk2Mins = walkMinutes(toStop);
+  const segments = route.kind === 'direct'
+    ? [{ lineId: route.lineId, stops: route.stops }]
+    : [route.seg1, route.seg2];
+  const legs = segments.map(({ lineId, stops }) => ({
+    kind: 'bus',
+    line: LINE_BY_ID[lineId],
+    stopIds: stops,
+    boardId: stops[0],
+    alightId: stops.at(-1),
+    directionStopId: stops[1],
+  }));
+  const steps = legs.flatMap((leg, index) => {
+    const board = STOPS_BY_ID[leg.boardId];
+    const alight = STOPS_BY_ID[leg.alightId];
+    return [
+      ...(index ? [{
+        type: 'transfer', phase: 'board', kicker: 'Transfer',
+        title: `Change at ${board.short}`, detail: 'Check the next departure before transferring.',
+        nextHint: `Board ${leg.line.name}`, leg: { stopId: board.id }, nextBus: leg,
+      }] : []),
+      {
+        type: 'board', phase: 'board', kicker: 'Board', leg,
+        title: `Board ${leg.line.name} at ${board.short}`,
+        detail: board.name, nextHint: `Next listed stop: ${STOPS_BY_ID[leg.directionStopId].short}`,
+      },
+      ...leg.stopIds.slice(1).map((id, position, rest) => {
+        const isAlight = position === rest.length - 1;
+        return {
+          type: 'ride', phase: 'ride', kicker: leg.line.name, leg, isAlight,
+          stopIndex: position + 1, remainingStops: rest.length - position - 1,
+          lineColor: leg.line.color,
+          title: isAlight ? `Alight at ${alight.short}` : `Stop: ${STOPS_BY_ID[id].short}`,
+          detail: STOPS_BY_ID[id].name,
+          nextHint: isAlight
+            ? (index < legs.length - 1 ? 'Change buses here' : 'End of itinerary')
+            : `Next listed stop: ${STOPS_BY_ID[rest[position + 1]].short}`,
+        };
+      }),
+    ];
+  });
+  steps.push({
+    type: 'arrived', phase: 'arrive', kicker: 'Destination',
+    title: toStop.name, detail: 'End of the published stop sequence for this trip.',
+    nextHint: 'Finish the route preview',
+  });
 
-  const legs = [
-    walkLeg('to-board', origin, stopPoint(fromStop), fromStop, walk1Mins, `Walk to ${fromStop.name}`),
-  ];
-
-  if (route.kind === 'direct') {
-    legs.push(busLeg(route.lineId, route.stops, route.mins, route.fromId, route.toId));
-  } else {
-    legs.push(
-      busLeg(route.seg1.lineId, route.seg1.stops, route.seg1.mins, route.fromId, route.via)
-    );
-    legs.push({
-      kind: 'transfer',
-      stopId: route.via,
-      mins: TRANSFER_MINS,
-      title: `Change at ${STOPS_BY_ID[route.via].short}`,
-    });
-    legs.push(
-      busLeg(route.seg2.lineId, route.seg2.stops, route.seg2.mins, route.via, route.toId)
-    );
-  }
-
-  legs.push(
-    walkLeg(
-      'to-destination',
-      stopPoint(toStop),
-      destination,
-      toStop,
-      walk2Mins,
-      `Walk to ${toStop.name}`
-    )
-  );
-
-  const steps = buildSteps(legs);
-
-  // Remaining time includes the current step, so it matches the journey total at the start.
-  let after = 0;
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const total = after + steps[i].duration;
-    steps[i].remainingMins = steps[i].type === 'arrived' ? 0 : Math.max(1, Math.round(total));
-    after = total;
-  }
-
-  decorate(steps, legs, fromStop, toStop, walk1Mins, walk2Mins);
-
-  const busPaths = legs
-    .filter((l) => l.kind === 'bus')
-    .map((l) => ({
-      points: busRoadPoints(l.stopIds),
-      color: l.line.color,
-      lineName: l.line.name,
-    }));
-
-  const walkPaths = [
-    { d: campusPath(fromWalk), key: 'to-board' },
-    { d: campusPath(toWalk), key: 'to-destination' },
-  ];
-
+  const paths = legs.flatMap((leg) => roadPaths(leg.stopIds).map((path) => ({
+    ...path, color: leg.line.color, lineName: leg.line.name,
+  })));
   const focusPoints = [
-    origin,
-    destination,
-    ...busPaths.flatMap((path) => path.points.map(([x, y]) => ({ x, y }))),
+    ...legs.flatMap((leg) => leg.stopIds.map((id) => stopPoint(STOPS_BY_ID[id]))).filter(Boolean),
+    ...paths.flatMap(({ points }) => points.map(([x, y]) => ({ x, y }))),
   ];
-
   return {
-    steps,
-    legs,
-    totalMins: Math.max(1, Math.round(after)),
-    origin,
-    destination,
-    fromStop,
-    toStop,
-    boardId: route.fromId,
-    alightId: route.toId,
-    transferId: route.kind === 'transfer' ? route.via : null,
-    busPaths: busPaths.map(({ points, ...style }) => ({ ...style, d: campusPath(points) })),
-    walkPaths,
+    steps, legs, fromStop, toStop,
+    destination: stopPoint(toStop),
+    busPaths: paths,
     focusPoints,
   };
 }

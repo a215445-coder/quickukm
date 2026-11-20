@@ -344,6 +344,41 @@ svg {
   color: var(--ink-2);
 }
 
+.map-note {
+  margin: 8px 4px 12px;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.shuttle-stop-list {
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.shuttle-stop-list summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.shuttle-stop-list ol {
+  padding: 8px 0 0 22px;
+}
+
+.shuttle-stop-list li + li {
+  margin-top: 5px;
+}
+
 .nav-map .map-attribution {
   position: absolute;
   top: calc(16px + env(safe-area-inset-top, 0px));
