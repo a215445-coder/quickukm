@@ -2607,7 +2607,7 @@ svg {
     background: linear-gradient(270deg, #444750, #08080b 75%);
   }
 
-  /* Device body — 393 × 852 logical screen */
+  /* Desktop preview proportions. */
   #root {
     position: relative;
     z-index: 0;
@@ -2616,7 +2616,7 @@ svg {
     width: auto;
     height: min(852px, calc(100vh - 68px));
     height: min(852px, calc(100dvh - 68px));
-    aspect-ratio: 393 / 852;
+    aspect-ratio: 425 / 852;
     border: 10px solid transparent;
     border-radius: 56px;
     /* Paint the screen and bezel from the same rounded box. */
