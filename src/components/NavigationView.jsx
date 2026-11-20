@@ -11,7 +11,7 @@ import {
   Repeat,
   X,
 } from 'lucide-react';
-import CampusMap from './CampusMap';
+import CampusMap, { MapAttribution } from './CampusMap';
 import { STOPS_BY_ID, getStopArrivals } from '../data/mockData';
 import { buildJourney } from '../data/navigation';
 
@@ -406,8 +406,9 @@ export default function NavigationView({ route, onExit }) {
       <div className="nav-map">
         <CampusMap navigation={nav} />
         <span className="nav-live">
-          <span className="pulse-dot" /> Simulated GPS
+          <span className="pulse-dot" /> Demo navigation
         </span>
+        <MapAttribution />
       </div>
 
       <section

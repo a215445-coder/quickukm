@@ -333,6 +333,27 @@ svg {
   cursor: pointer;
 }
 
+.map-attribution {
+  margin: 4px 8px 0;
+  text-align: right;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.map-attribution a {
+  color: var(--ink-2);
+}
+
+.nav-map .map-attribution {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  left: 14px;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .stop-label {
   font-size: 9.5px;
   font-weight: 700;
@@ -2304,6 +2325,14 @@ svg {
 
 /* ---------- desktop: iPhone preview frame ---------- */
 
+.device-frame {
+  display: contents;
+}
+
+.device-keys {
+  display: none;
+}
+
 @media (min-width: 520px) {
   body {
     min-height: 100vh;
@@ -2312,15 +2341,53 @@ svg {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: radial-gradient(
-      1100px 600px at 15% -5%,
-      #1b2a54 0%,
-      #111c3a 55%,
-      #0b1226 100%
-    );
+    background: linear-gradient(145deg, #eaf0f7 0%, #c9d5e4 55%, #a5b7cd 100%);
   }
 
-  /* Device body — 393 × 852 logical screen (iPhone 15/16 Pro) */
+  .device-frame {
+    display: flex;
+    position: relative;
+    flex: none;
+  }
+
+  .device-keys {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .device-key {
+    position: absolute;
+    width: 5px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #444750, #08080b 75%);
+  }
+
+  .device-key--action,
+  .device-key--volume-up,
+  .device-key--volume-down {
+    left: -3px;
+  }
+
+  .device-key--action { top: 14%; height: 3.5%; }
+
+  .device-key--volume-up,
+  .device-key--volume-down {
+    height: 7.2%;
+  }
+
+  .device-key--volume-up { top: 19.8%; }
+  .device-key--volume-down { top: 29%; }
+
+  .device-key--power {
+    top: 22.5%;
+    height: 10.8%;
+    right: -3px;
+    background: linear-gradient(270deg, #444750, #08080b 75%);
+  }
+
+  /* Device body — 393 × 852 logical screen */
   #root {
     position: relative;
     z-index: 0;
@@ -2330,15 +2397,13 @@ svg {
     height: min(852px, calc(100vh - 68px));
     height: min(852px, calc(100dvh - 68px));
     aspect-ratio: 393 / 852;
-    border: 10px solid #08080b;
+    border: 10px solid transparent;
     border-radius: 56px;
-    background: #000;
+    /* Paint the screen and bezel from the same rounded box. */
+    background:
+      linear-gradient(var(--bg), var(--bg)) padding-box,
+      linear-gradient(#08080b, #08080b) border-box;
     overflow: hidden;
-    box-shadow:
-      0 0 0 2px #2b2b30,
-      0 0 0 3px rgba(255, 255, 255, 0.12),
-      0 34px 70px rgba(0, 0, 0, 0.55),
-      0 10px 24px rgba(0, 0, 0, 0.35);
   }
 
   /* Dynamic Island */
@@ -2381,7 +2446,8 @@ svg {
     min-height: 0;
     max-width: none;
     margin: 0;
-    border-radius: 46px;
+    /* Keep translucent bars from blurring the black bezel into the screen. */
+    will-change: opacity;
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: none;
@@ -2439,6 +2505,10 @@ svg {
   .nav-live {
     top: 52px;
     right: 22px;
+  }
+
+  .nav-map .map-attribution {
+    top: 52px;
   }
 
   /* clear the home indicator at the bottom of the screen */

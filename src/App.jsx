@@ -10,7 +10,7 @@ import AlertsPage from './pages/AlertsPage';
 
 const FAV_KEY = 'quickukm:favs';
 const ALERT_KEY = 'quickukm:alerts';
-const DEFAULT_FAVS = ['fssk:fst', 'fep:ffar'];
+const DEFAULT_FAVS = ['fssk:fst', 'ktho:library'];
 
 const INITIAL_NOTIFICATIONS = [
   {
@@ -18,7 +18,7 @@ const INITIAL_NOTIFICATIONS = [
     kind: 'arrival',
     lineId: 'A',
     title: 'Bus A-14 arriving soon',
-    body: 'Zon A bus arriving at FST in about 3 min.',
+    body: 'Demo A bus arriving at FST in about 3 min.',
     time: 'Just now',
     read: false,
   },
@@ -27,22 +27,22 @@ const INITIAL_NOTIFICATIONS = [
     kind: 'arrival',
     lineId: 'C',
     title: 'Bus C-02 arriving soon',
-    body: 'Zon C bus arriving at FFAR in about 7 min.',
+    body: 'Demo C bus arriving at FPEND in about 7 min.',
     time: '2 min ago',
     read: false,
   },
   {
     id: 3,
     kind: 'service',
-    title: 'Service update · Zon B',
-    body: 'Zon B running about 5 min behind schedule near the main gate.',
+    title: 'Service update · Demo B',
+    body: 'Demo B running about 5 min behind schedule near the main gate.',
     time: '15 min ago',
     read: false,
   },
 ];
 
 const PAGE_META = {
-  routes: { title: 'Routes', sub: 'Plan your trip across campus' },
+  routes: { title: 'Routes', sub: 'Plan a demo trip on UKM campus roads' },
   timetable: { title: 'Timetable', sub: 'Simulated live schedules' },
   favourites: { title: 'Favourites', sub: 'Your saved trips' },
   alerts: { title: 'Arrival Alerts', sub: 'Simulated notifications' },
@@ -113,7 +113,7 @@ export default function App() {
         kind: 'arrival',
         lineId: 'D',
         title: 'Bus D-03 arriving soon',
-        body: 'Zon D express arriving at FPER in about 5 min.',
+        body: 'Demo D bus arriving at FTSM in about 5 min.',
         time: 'Just now',
         read: tab === 'alerts',
       },

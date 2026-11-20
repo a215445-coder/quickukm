@@ -14,9 +14,9 @@ import { LINE_BY_ID, STOPS_BY_ID, findRoutes, nextDepartures } from '../data/moc
 
 const SUGGESTIONS = [
   { fromId: 'fssk', toId: 'fst' },
-  { fromId: 'fep', toId: 'ffar' },
+  { fromId: 'ktho', toId: 'library' },
   { fromId: 'fst', toId: 'fpend' },
-  { fromId: 'ffar', toId: 'fper' },
+  { fromId: 'kpz', toId: 'ftsm' },
 ];
 
 function Steps({ stops, lineId, start, end }) {

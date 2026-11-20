@@ -4,8 +4,9 @@ A mobile-first campus bus companion prototype for international students at
 Universiti Kebangsaan Malaysia (UKM Bangi). The frontend is built with
 **React + Vite** and is wrapped as an **iPhone app** with SwiftUI + WKWebView.
 
-All bus positions, ETAs, schedules and alerts are **simulated** — there is no
-backend, login, real GPS or official UKM data.
+The offline Bangi map uses [OpenStreetMap](https://www.openstreetmap.org/#map=16/2.9255/101.778) roads, buildings and landmarks. Map geography in `src/assets/ukm-bangi-map.svg` and `src/data/campusGeography.json` is derived from [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) under the ODbL. Filled markers are mapped bus stops, and hollow markers indicate demo pickups near landmarks.
+
+Lines A–D, bus positions, ETAs, walking guidance, schedules and alerts are for demonstration. Check [GeoMapUKM](https://www.gis.ukm.my/) for official campus geography and UKM for current shuttle service.
 
 **Live demo:** <https://a215445-coder.github.io/quickukm/>
 
@@ -15,12 +16,12 @@ backend, login, real GPS or official UKM data.
 
 ## Features
 
-- **Home** — stylised UKM campus map with simulated moving buses, quick trip
-  planner, zone legend, nearby stops and popular routes.
+- **Home** — UKM Bangi road map with simulated moving buses, quick trip
+  planner, route legend, nearby stops and popular routes.
 - **Routes** — from/to selection, swap, direct and transfer options, walking
   times, per-stop timeline and a simulated **Start Navigation** flow with
   step-by-step walking/boarding/riding guidance.
-- **Timetable** — filter by Zon A–D, expandable cards and next departures.
+- **Timetable** — filter by demo lines A–D, with expandable cards and sample departures.
 - **Favourites** — save trips; they persist in `localStorage`.
 - **Arrival Alerts** — simulated notification feed, master switch and a
   "simulate a notification" demo button.

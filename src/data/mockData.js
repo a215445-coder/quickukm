@@ -1,85 +1,25 @@
-// QuickUKM — simulated campus transit data (prototype only, no real API/GPS)
+// Demo shuttle services use mapped campus pickup points and road geometry.
+import campus from './campusGeography.json';
 
-export const STOPS = [
-  { id: 'fssk', name: 'FSSK · Social Sciences & Humanities', short: 'FSSK', x: 78, y: 92, ly: -14, walk: '2 min walk from the FSSK main entrance' },
-  { id: 'fep', name: 'FEP · Economics & Management', short: 'FEP', x: 170, y: 70, ly: -14, walk: '3 min walk from the main gate' },
-  { id: 'fst', name: 'FST · Science & Technology', short: 'FST', x: 290, y: 88, ly: -14, walk: '5 min walk from Dataran FST' },
-  { id: 'ftsm', name: 'FTSM · Information Science & Technology', short: 'FTSM', x: 290, y: 205, lx: 18, ly: 4, walk: '2 min walk to the FTSM lobby' },
-  { id: 'fkab', name: 'FKAB · Engineering & Built Environment', short: 'FKAB', x: 320, y: 300, ly: 20, walk: '4 min walk from the FKAB plaza' },
-  { id: 'fper', name: 'FPER · Medicine', short: 'FPER', x: 250, y: 330, ly: -16, walk: '6 min walk from HUKM entrance' },
-  { id: 'fpend', name: 'FPEND · Education', short: 'FPEND', x: 140, y: 415, ly: -16, walk: '3 min walk to the lecture halls' },
-  { id: 'fsk', name: 'FSK · Health Sciences', short: 'FSK', x: 95, y: 330, lx: 16, ly: 4, walk: '2 min walk to the FSK building' },
-  { id: 'fpi', name: 'FPI · Islamic Studies', short: 'FPI', x: 70, y: 235, ly: 18, walk: '2 min walk via the masjid' },
-  { id: 'ffar', name: 'FFAR · Pharmacy', short: 'FFAR', x: 180, y: 200, ly: 20, walk: '1 min walk from the FFAR entrance' },
-  { id: 'kiz', name: 'KIZ · Kolej Ibu Zain', short: 'KIZ', x: 230, y: 430, ly: 20, walk: '1 min walk from the KIZ college gate' },
-];
+export const STOPS = campus.stops;
+export const STOPS_BY_ID = Object.fromEntries(STOPS.map((stop) => [stop.id, stop]));
 
-export const STOPS_BY_ID = Object.fromEntries(STOPS.map((s) => [s.id, s]));
+export function campusPath(points) {
+  return points.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
+}
 
-// freq/loopTotal in minutes; offsets are minutes from the line's first stop;
-// path is the SVG path buses follow on the simulated campus map
-export const LINES = [
-  {
-    id: 'A',
-    name: 'Zon A',
-    color: '#2563EB',
-    stopIds: ['fssk', 'fep', 'fst', 'ftsm', 'fkab', 'fper', 'kiz', 'fpend', 'fsk', 'fpi'],
-    offsets: [0, 4, 9, 14, 19, 24, 28, 33, 38, 43],
-    freq: 12,
-    phase: 0,
-    first: 420,
-    last: 1380,
-    loop: true,
-    loopTotal: 49,
-    path: 'M78,92 L170,70 L290,88 L290,205 L320,300 L250,330 L230,430 L140,415 L95,330 L70,235 L78,92',
-    description: 'Ring line around all faculties (loop)',
-  },
-  {
-    id: 'B',
-    name: 'Zon B',
-    color: '#F97316',
-    stopIds: ['fpi', 'ffar', 'ftsm', 'fst', 'fep', 'fssk'],
-    offsets: [0, 6, 11, 16, 21, 25],
-    freq: 15,
-    phase: 4,
-    first: 420,
-    last: 1380,
-    loop: true,
-    loopTotal: 30,
-    path: 'M70,235 L180,200 L290,205 L290,88 L170,70 L78,92 L70,235',
-    description: 'Inner loop via FFAR & FTSM (loop)',
-  },
-  {
-    id: 'C',
-    name: 'Zon C',
-    color: '#0E9F6E',
-    stopIds: ['fpend', 'kiz', 'fper', 'fkab', 'ftsm', 'ffar', 'fpi'],
-    offsets: [0, 4, 8, 13, 18, 25, 31],
-    freq: 20,
-    phase: 9,
-    first: 420,
-    last: 1380,
-    loop: true,
-    loopTotal: 62,
-    path: 'M140,415 L230,430 L250,330 L320,300 L290,205 L180,200 L70,235 L180,200 L290,205 L320,300 L250,330 L230,430 L140,415',
-    description: 'FPEND ⇄ FPI via KIZ, FPER & FKAB (return service)',
-  },
-  {
-    id: 'D',
-    name: 'Zon D',
-    color: '#8B5CF6',
-    stopIds: ['fst', 'ftsm', 'fkab', 'fper'],
-    offsets: [0, 5, 10, 15],
-    freq: 10,
-    phase: 2,
-    first: 420,
-    last: 1380,
-    loop: true,
-    loopTotal: 30,
-    path: 'M290,88 L290,205 L320,300 L250,330 L320,300 L290,205 L290,88',
-    description: 'FST ⇄ FPER express bus (return service)',
-  },
-];
+export function busRoadPoints(stopIds) {
+  return stopIds.slice(1).flatMap((stop, index) => {
+    const segment = campus.roadSegments[`${stopIds[index]}:${stop}`];
+    if (!segment) throw new Error(`Missing campus road segment to ${stop}`);
+    return index === 0 ? segment : segment.slice(1);
+  });
+}
+
+export const LINES = campus.lines.map((line) => ({
+  ...line,
+  path: campusPath(busRoadPoints([...line.stopIds, line.stopIds[0]])),
+}));
 
 export const LINE_BY_ID = Object.fromEntries(LINES.map((l) => [l.id, l]));
 

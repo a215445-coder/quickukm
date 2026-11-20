@@ -3,7 +3,7 @@ import { STOPS_BY_ID, tripSummary } from '../data/mockData';
 
 const SUGGESTED = [
   ['fst', 'fpend'],
-  ['ffar', 'fper'],
+  ['kpz', 'ftsm'],
   ['fssk', 'fpi'],
 ];
 

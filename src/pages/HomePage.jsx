@@ -9,25 +9,21 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import CampusMap from '../components/CampusMap';
+import CampusMap, { MapAttribution } from '../components/CampusMap';
 import StopSelect from '../components/StopSelect';
 import { LINE_BY_ID, STOPS_BY_ID, getStopArrivals, tripSummary } from '../data/mockData';
 
-const NEARBY = [
-  { stopId: 'ffar', distance: '200 m', walk: '2 min' },
-  { stopId: 'ftsm', distance: '300 m', walk: '4 min' },
-  { stopId: 'fst', distance: '550 m', walk: '7 min' },
-];
+const NEARBY = ['pusanika', 'library', 'fep'];
 
 const POPULAR = [
   ['fssk', 'fst'],
-  ['fep', 'ffar'],
-  ['ffar', 'fper'],
+  ['ktho', 'library'],
+  ['kpz', 'ftsm'],
   ['fst', 'fpend'],
 ];
 
 export default function HomePage({ onTrip, onNavigate }) {
-  const [from, setFrom] = useState('ffar');
+  const [from, setFrom] = useState('ktho');
   const [to, setTo] = useState('');
   const [selectedStop, setSelectedStop] = useState(null);
   const [tick, setTick] = useState(0);
@@ -57,7 +53,7 @@ export default function HomePage({ onTrip, onNavigate }) {
           <div className="trip-quick-head">
             <span>Plan a trip</span>
             <span className="live-pill">
-              <span className="pulse-dot" /> LIVE
+              <span className="pulse-dot" /> DEMO
             </span>
           </div>
           <StopSelect dot="from" value={from} onChange={setFrom} placeholder="From…" />
@@ -74,8 +70,8 @@ export default function HomePage({ onTrip, onNavigate }) {
 
         <button
           className="locate-btn"
-          onClick={() => setSelectedStop('ffar')}
-          aria-label="Show nearest stop (FFAR)"
+          onClick={() => setSelectedStop('pusanika')}
+          aria-label="Show Pusanika"
         >
           <LocateFixed size={18} />
         </button>
@@ -85,7 +81,7 @@ export default function HomePage({ onTrip, onNavigate }) {
             <div className="stop-sheet-head">
               <div>
                 <h3>{stop.name}</h3>
-                <p>{stop.walk || 'Major stop — all lines stop here'}</p>
+                <p>{stop.mappedStop ? 'Mapped bus stop' : 'Demo pickup near this landmark'} · {stop.walk}</p>
               </div>
               <button className="sheet-close" onClick={() => setSelectedStop(null)} aria-label="Close">
                 <X size={15} />
@@ -124,6 +120,7 @@ export default function HomePage({ onTrip, onNavigate }) {
           </div>
         )}
       </section>
+      <MapAttribution />
 
       <div className="legend">
         {Object.values(LINE_BY_ID).map((l) => (
@@ -139,21 +136,21 @@ export default function HomePage({ onTrip, onNavigate }) {
 
       <section className="section">
         <h2 className="section-title">
-          Nearby stops{' '}
+          Stops near Pusanika{' '}
           <button className="link" onClick={() => onNavigate('timetable')}>
             See timetable
           </button>
         </h2>
         <div className="h-scroll">
-          {NEARBY.map((n) => {
-            const s = STOPS_BY_ID[n.stopId];
-            const arrivalsHere = getStopArrivals(n.stopId);
+          {NEARBY.map((stopId) => {
+            const s = STOPS_BY_ID[stopId];
+            const arrivalsHere = getStopArrivals(stopId);
             return (
               <button
-                key={n.stopId}
+                key={stopId}
                 className="nearby-card"
                 onClick={() => {
-                  setSelectedStop(n.stopId);
+                  setSelectedStop(stopId);
                   document
                     .getElementById('campus-map')
                     ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -161,11 +158,10 @@ export default function HomePage({ onTrip, onNavigate }) {
               >
                 <div className="nearby-head">
                   <b>{s.name}</b>
-                  <span className="nearby-sub">{n.distance}</span>
                 </div>
                 <span className="nearby-sub">
                   <Footprints size={11} style={{ display: 'inline', marginRight: 3 }} />
-                  {n.walk} walk
+                  {s.mappedStop ? 'Mapped bus stop' : 'Demo pickup'}
                 </span>
                 <div
                   className="arrival-row"
@@ -224,7 +220,7 @@ export default function HomePage({ onTrip, onNavigate }) {
 
       <div className="status">
         <span className="pulse-dot" />
-        All Zon services running normally
+        Demo services · simulated arrivals
         <span className="muted">
           <Clock size={11} style={{ display: 'inline', marginRight: 3 }} />
           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

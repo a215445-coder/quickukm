@@ -1,8 +1,7 @@
 // QuickUKM — simulated turn-by-turn journey builder (no GPS / maps API)
 
-import { LINE_BY_ID, STOPS_BY_ID } from './mockData';
+import { LINE_BY_ID, STOPS_BY_ID, busRoadPoints, campusPath } from './mockData';
 
-const WALK_METRES_PER_MIN = 80;
 const TRANSFER_MINS = 5;
 
 const DIRS = [
@@ -16,14 +15,6 @@ const DIRS = [
   'north-east',
 ];
 
-function hash(id) {
-  return [...id].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-}
-
-function clamp(v, min, max) {
-  return Math.min(max, Math.max(min, v));
-}
-
 function walkMinutes(stop) {
   const match = /(\d+)\s*min/i.exec(stop?.walk || '');
   return match ? Number(match[1]) : 3;
@@ -33,24 +24,9 @@ function stopPoint(stop) {
   return { x: stop.x, y: stop.y };
 }
 
-// A believable, deterministic spot near the stop for the simulated user.
-function nearbyPoint(stop, seed) {
-  const h = hash(stop.id) + seed * 47;
-  const angle = (h % 360) * (Math.PI / 180);
-  const dist = 28 + (h % 4) * 5;
-  return {
-    x: clamp(stop.x + Math.cos(angle) * dist, 16, 364),
-    y: clamp(stop.y + Math.sin(angle) * dist, 16, 444),
-  };
-}
-
 function compass(from, to) {
   const deg = (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
   return DIRS[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
-}
-
-function polyline(points) {
-  return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
 }
 
 function busLeg(lineId, stopIds, mins, boardId, alightId) {
@@ -68,7 +44,7 @@ function busLeg(lineId, stopIds, mins, boardId, alightId) {
 }
 
 function walkLeg(key, from, to, stop, mins, title) {
-  const distance = Math.round((mins * WALK_METRES_PER_MIN) / 10) * 10;
+  const distance = Math.round(stop.walkMetres / 10) * 10;
   return {
     kind: 'walk',
     key,
@@ -129,8 +105,8 @@ function decorate(steps, legs, fromStop, toStop, walk1Mins, walk2Mins) {
         step.detail = `Head ${step.leg.compass} · ${step.leg.distance} m · ${walk1Mins} min`;
         step.nextHint = `Arrive at ${fromStop.short} and wait for your bus`;
         step.directions = [
-          { label: `Start at your current location`, note: `near ${fromStop.short}` },
-          { label: `Head ${step.leg.compass} along the campus path`, note: `${step.leg.distance} m` },
+          { label: `Start at the campus landmark`, note: `near ${fromStop.short}` },
+          { label: `Head ${step.leg.compass} towards the pickup`, note: `${step.leg.distance} m` },
           { label: `Arrive at ${fromStop.name}`, note: `${walk1Mins} min walk` },
         ];
       } else {
@@ -141,7 +117,7 @@ function decorate(steps, legs, fromStop, toStop, walk1Mins, walk2Mins) {
         step.nextHint = `You'll arrive at ${toStop.name}`;
         step.directions = [
           { label: `Leave the bus at ${toStop.short}`, note: 'Alight here' },
-          { label: `Head ${step.leg.compass} along the walkway`, note: `${step.leg.distance} m` },
+          { label: `Head ${step.leg.compass} towards the landmark`, note: `${step.leg.distance} m` },
           { label: `Arrive at ${toStop.name}`, note: `${walk2Mins} min walk` },
         ];
       }
@@ -176,7 +152,7 @@ function decorate(steps, legs, fromStop, toStop, walk1Mins, walk2Mins) {
         step.title = `Alight at ${alight.short}`;
         step.detail = transferLeg
           ? 'Transfer here for your next bus.'
-          : 'You have reached your stop. Use the front door.';
+          : 'You have reached your demo stop.';
         step.nextHint = transferLeg
           ? `Change at ${alight.short}`
           : `Walk ${walk2Mins} min to ${toStop.name}`;
@@ -219,8 +195,12 @@ function decorate(steps, legs, fromStop, toStop, walk1Mins, walk2Mins) {
 export function buildJourney(route) {
   const fromStop = STOPS_BY_ID[route.fromId];
   const toStop = STOPS_BY_ID[route.toId];
-  const origin = nearbyPoint(fromStop, 1);
-  const destination = nearbyPoint(toStop, 7);
+  const fromWalk = fromStop.walkPoints.slice().reverse();
+  const toWalk = toStop.walkPoints;
+  const [originX, originY] = fromWalk[0];
+  const [destinationX, destinationY] = toWalk.at(-1);
+  const origin = { x: originX, y: originY };
+  const destination = { x: destinationX, y: destinationY };
   const walk1Mins = walkMinutes(fromStop);
   const walk2Mins = walkMinutes(toStop);
 
@@ -271,22 +251,20 @@ export function buildJourney(route) {
   const busPaths = legs
     .filter((l) => l.kind === 'bus')
     .map((l) => ({
-      d: polyline(l.stopIds.map((id) => STOPS_BY_ID[id])),
+      points: busRoadPoints(l.stopIds),
       color: l.line.color,
       lineName: l.line.name,
     }));
 
   const walkPaths = [
-    { d: polyline([origin, stopPoint(fromStop)]), key: 'to-board' },
-    { d: polyline([stopPoint(toStop), destination]), key: 'to-destination' },
+    { d: campusPath(fromWalk), key: 'to-board' },
+    { d: campusPath(toWalk), key: 'to-destination' },
   ];
 
   const focusPoints = [
     origin,
     destination,
-    ...legs
-      .filter((l) => l.kind === 'bus')
-      .flatMap((l) => l.stopIds.map((id) => STOPS_BY_ID[id])),
+    ...busPaths.flatMap((path) => path.points.map(([x, y]) => ({ x, y }))),
   ];
 
   return {
@@ -300,7 +278,7 @@ export function buildJourney(route) {
     boardId: route.fromId,
     alightId: route.toId,
     transferId: route.kind === 'transfer' ? route.via : null,
-    busPaths,
+    busPaths: busPaths.map(({ points, ...style }) => ({ ...style, d: campusPath(points) })),
     walkPaths,
     focusPoints,
   };
