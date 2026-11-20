@@ -21,12 +21,30 @@ export function linesAtStop(id) {
 }
 
 export function roadPaths(stopIds) {
-  return stopIds.slice(1).flatMap((id, index) => {
-    const points = campus.roadSegments[`${stopIds[index]}:${id}`];
-    if (!points || points.length < 2) return [];
-    const d = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
-    return [{ d, points }];
-  });
+  // Keep unmapped stops in the itinerary. The road overlay joins the mapped
+  // anchors before and after them without assigning them guessed coordinates.
+  const anchors = stopIds.filter((id) => STOPS_BY_ID[id]?.location);
+  const sections = [];
+  let current;
+  for (let i = 1; i < anchors.length; i++) {
+    const segment = campus.roadSegments[`${anchors[i - 1]}:${anchors[i]}`];
+    if (!segment) {
+      current = undefined;
+      continue;
+    }
+    const end = current?.at(-1);
+    const [x, y] = segment[0];
+    if (end && end[0] === x && end[1] === y) {
+      current.push(...segment.slice(1));
+    } else {
+      current = [...segment];
+      sections.push(current);
+    }
+  }
+  return sections.filter((points) => points.length > 1).map((points) => ({
+    points,
+    d: points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' '),
+  }));
 }
 
 function segment(line, fromId, toId) {

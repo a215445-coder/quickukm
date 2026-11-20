@@ -5,44 +5,26 @@ import campusMapSvg from '../assets/ukm-bangi-map.svg?raw';
 // Keep the map available in the single-file offline iPhone bundle.
 const campusMapUrl = `data:image/svg+xml,${encodeURIComponent(campusMapSvg)}`;
 
-const CAMPUS_VIEW = '0 -115 500 510';
+const CAMPUS_VIEW = '0 -135 500 530';
 const MAP_STOPS = STOPS.filter((stop) => stop.location);
 const LABELLED_STOPS = new Set([
   'kpz', 'ftsm', 'fkab', 'fpend', 'pusanika', 'dectar', 'krk', 'ktho', 'fssk',
   'library', 'fep', 'fst', 'kkm', 'driving',
 ]);
-const LINE_PATHS = LINES.map((line) => ({
-  ...line,
-  routePath: roadPaths(line.stopIds).map(({ d }) => d).join(' '),
-}));
+const LINE_PATHS = LINES.map((line) => {
+  const sections = roadPaths(line.stopIds);
+  return { ...line, sections, routePath: sections.map(({ d }) => d).join(' ') };
+});
 
-function continuousRoads(stopIds) {
-  const sections = [];
-  for (const { points } of roadPaths(stopIds)) {
-    const current = sections.at(-1);
-    const end = current?.at(-1);
-    const [x, y] = points[0];
-    if (end && end[0] === x && end[1] === y) current.push(...points.slice(1));
-    else sections.push([...points]);
-  }
-
-  return sections.map((points) => ({
-    path: points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' '),
-    length: points.slice(1).reduce((sum, [x, y], i) => (
-      sum + Math.hypot(x - points[i][0], y - points[i][1])
-    ), 0),
-  })).sort((a, b) => b.length - a.length);
-}
-
-// Each bus loops over a continuous section, without crossing gaps in map data.
-const usedPreviewPaths = new Set();
-const PREVIEW_BUSES = LINES.flatMap((line, index) => {
-  const choices = continuousRoads(line.stopIds);
-  const section = choices.find(({ path }) => !usedPreviewPaths.has(path)) ?? choices[0];
+// Motion uses the same complete loop as the visible route line.
+const PREVIEW_BUSES = LINE_PATHS.flatMap((line, index) => {
+  const section = line.sections[0];
   if (!section) return [];
-  usedPreviewPaths.add(section.path);
-  const duration = Math.round(Math.max(24, section.length / 15));
-  return [{ ...line, path: section.path, duration, offset: duration * (0.2 + index * 0.15) }];
+  const length = section.points.slice(1).reduce((sum, [x, y], i) => (
+    sum + Math.hypot(x - section.points[i][0], y - section.points[i][1])
+  ), 0);
+  const duration = Math.max(24, Math.round(length / 18));
+  return [{ id: line.id, color: line.color, path: section.d, duration, offset: duration * (0.2 + index * 0.15) }];
 });
 
 function PreviewBus({ bus }) {
@@ -50,7 +32,7 @@ function PreviewBus({ bus }) {
   return (
     <g className="preview-bus" pointerEvents="none" aria-hidden="true">
       <animateMotion {...timing} path={bus.path} />
-      <animate {...timing} attributeName="opacity" values="0;1;1;0" keyTimes="0;0.03;0.97;1" />
+      <animate {...timing} attributeName="opacity" values="0.98;1;0.98" />
       <rect x="-16" y="-10" width="32" height="20" rx="6" fill={bus.color} stroke="#fff" strokeWidth="2.5" />
       <g transform="translate(-12,-5)" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round">
         <rect x="1" y="0" width="10" height="9" rx="2" />
@@ -96,9 +78,12 @@ export function MapAttribution() {
   );
 }
 
-export default function CampusMap({ selectedStop, onSelectStop, navigation, pauseBusMotion = false }) {
+export default function CampusMap({ selectedStop, onSelectStop, navigation, pauseBusMotion = false, focusedLine = null }) {
   const nav = navigation;
   const mapRef = useRef(null);
+  const orderedLines = focusedLine
+    ? [...LINE_PATHS.filter((line) => line.id !== focusedLine), ...LINE_PATHS.filter((line) => line.id === focusedLine)]
+    : LINE_PATHS;
 
   useLayoutEffect(() => {
     if (nav) return;
@@ -122,16 +107,20 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation, paus
       aria-label={nav ? 'Step-by-step route map' : 'UKM Bangi campus map with listed shuttle stops'}
     >
       <rect x="-200" y="-200" width="780" height="1500" fill="#eff0e5" />
-      <image href={campusMapUrl} x="-45" y="-120" width="575" height="620" />
+      <image href={campusMapUrl} x="-45" y="-135" width="575" height="635" />
 
       {/* route lines */}
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {LINE_PATHS.map((l) => (
-          <g key={l.id}>
-            <path d={l.routePath} stroke="#fff" strokeWidth="4.5" opacity={nav ? 0.22 : 0.8} />
-            <path d={l.routePath} stroke={l.color} strokeWidth="2.5" strokeDasharray="5 3" opacity={nav ? 0.16 : 0.73} />
-          </g>
-        ))}
+        {orderedLines.map((line) => {
+          const muted = nav || (focusedLine && line.id !== focusedLine);
+          const highlighted = line.id === focusedLine;
+          return (
+            <g key={line.id} opacity={muted ? 0.2 : 1}>
+              <path d={line.routePath} stroke="#fff" strokeWidth={highlighted ? '7' : '5'} />
+              <path data-route={line.id} d={line.routePath} stroke={line.color} strokeWidth={highlighted ? '4.2' : '2.8'} />
+            </g>
+          );
+        })}
       </g>
 
       {/* navigation route overlay */}
@@ -140,7 +129,7 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation, paus
           {nav.busPaths.map((p, index) => (
             <g key={index}>
               <path d={p.d} stroke="#fff" strokeWidth="8.5" opacity="0.95" />
-              <path d={p.d} stroke={p.color} strokeWidth="5" strokeDasharray="7 4" />
+              <path d={p.d} stroke={p.color} strokeWidth="5" />
             </g>
           ))}
         </g>
@@ -178,7 +167,8 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation, paus
         </g>
       ))}
 
-      {!nav && PREVIEW_BUSES.map((bus) => <PreviewBus key={bus.id} bus={bus} />)}
+      {!nav && PREVIEW_BUSES.filter((bus) => !focusedLine || bus.id === focusedLine)
+        .map((bus) => <PreviewBus key={bus.id} bus={bus} />)}
 
       {/* boarding / alighting / destination markers */}
       {nav && nav.board && (

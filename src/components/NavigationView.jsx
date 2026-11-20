@@ -104,7 +104,7 @@ function BoardBody({ step }) {
         </span>
       </div>
       <p className="nav-line-desc">{line.description}</p>
-      <p className="map-note">The map shows approximate road sections. Follow the published stop list below.</p>
+      <p className="map-note">The map shows an approximate path. Follow the published stop list below.</p>
       <p className="nav-board-at">
         <MapPin size={12} /> Board at {board.name}
       </p>

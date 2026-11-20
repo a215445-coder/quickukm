@@ -12,6 +12,7 @@ export default function HomePage({ onTrip, onNavigate }) {
   const [from, setFrom] = useState('kpz');
   const [to, setTo] = useState('');
   const [selectedStop, setSelectedStop] = useState(null);
+  const [focusedLine, setFocusedLine] = useState(null);
   const [pauseBusMotion, setPauseBusMotion] = useState(() =>
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
@@ -20,7 +21,8 @@ export default function HomePage({ onTrip, onNavigate }) {
   return (
     <>
       <section className="map-card" id="campus-map">
-        <CampusMap selectedStop={selectedStop} onSelectStop={setSelectedStop} pauseBusMotion={pauseBusMotion} />
+        <CampusMap selectedStop={selectedStop} onSelectStop={setSelectedStop}
+          pauseBusMotion={pauseBusMotion} focusedLine={focusedLine} />
 
         <div className="trip-quick">
           <div className="trip-quick-head"><span>Plan a trip</span><span>UKM Bangi</span></div>
@@ -73,12 +75,14 @@ export default function HomePage({ onTrip, onNavigate }) {
 
       <div className="legend" role="group" aria-label="Campus shuttle route numbers">
         {LINES.map((line) => (
-          <span className="legend-chip" key={line.id} aria-label={`Route ${line.id}`}>
+          <button type="button" className="legend-chip" key={line.id} aria-label={`Highlight route ${line.id}`}
+            aria-pressed={focusedLine === line.id}
+            onClick={() => setFocusedLine((current) => current === line.id ? null : line.id)}>
             <span className="line-dot" style={{ background: line.color }} /> {line.id}
-          </span>
+          </button>
         ))}
       </div>
-      <p className="map-note">Dashed lines show approximate road sections. Hollow markers show stop areas. See route lists for all stops.</p>
+      <p className="map-note">Tap a route number to highlight its loop. Paths are approximate. See route lists for every stop.</p>
 
       <section className="section">
         <h2 className="section-title">
