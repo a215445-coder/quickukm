@@ -1950,6 +1950,7 @@ svg {
 }
 
 .f-chip.active {
+  background: var(--primary);
   color: #fff;
 }
 
