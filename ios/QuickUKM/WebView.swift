@@ -3,12 +3,13 @@ import WebKit
 import UIKit
 
 /// Full-screen WKWebView that hosts the bundled QuickUKM prototype.
-/// The web app is self-contained, so no network connection is required.
+/// Campus overlays and the local map remain available offline.
 struct QuickUKMWebView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
+        config.applicationNameForUserAgent = "QuickUKM/1.0 (+https://github.com/a215445-coder/quickukm)"
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []

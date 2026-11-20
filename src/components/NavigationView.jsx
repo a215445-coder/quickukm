@@ -10,7 +10,7 @@ import {
   Repeat,
   X,
 } from 'lucide-react';
-import CampusMap, { MapAttribution } from './CampusMap';
+import CampusMap from './CampusMap';
 import { STOPS_BY_ID } from '../data/shuttleData';
 import { buildJourney, stopPoint } from '../data/navigation';
 
@@ -329,7 +329,6 @@ export default function NavigationView({ route, onExit }) {
         <span className="nav-live">
           <span className="pulse-dot" /> Route preview
         </span>
-        <MapAttribution />
       </div>
 
       <section

@@ -4,6 +4,10 @@ A mobile-first campus bus companion prototype for international students at
 Universiti Kebangsaan Malaysia (UKM Bangi). The frontend is built with
 **React + Vite** and is wrapped as an **iPhone app** with SwiftUI + WKWebView.
 
+The interactive map uses online OpenStreetMap tiles. Drag to pan, use the zoom
+buttons, or pinch on a touchscreen. On desktop, focus the map to use the mouse
+wheel. The built-in campus map stays available if online tiles are unavailable.
+
 The offline Bangi map uses roads, buildings and landmarks from
 [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL).
 Solid markers indicate mapped stops. Hollow markers indicate approximate stop

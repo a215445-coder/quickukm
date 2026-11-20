@@ -1,216 +1,296 @@
-import { useLayoutEffect, useRef } from 'react';
-import { LINES, STOPS, roadPaths } from '../data/shuttleData';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import campusMapSvg from '../assets/ukm-bangi-map.svg?raw';
+import { LINES, STOPS, roadPaths } from '../data/shuttleData';
 
-// Keep the map available in the single-file offline iPhone bundle.
-const campusMapUrl = `data:image/svg+xml,${encodeURIComponent(campusMapSvg)}`;
-
-const CAMPUS_VIEW = '0 -135 500 530';
+const TILE_URL = import.meta.env.VITE_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const LOCAL_MAP_URL = `data:image/svg+xml,${encodeURIComponent(campusMapSvg)}`;
 const MAP_STOPS = STOPS.filter((stop) => stop.location);
-const LABELLED_STOPS = new Set([
-  'kpz', 'ftsm', 'fkab', 'fpend', 'pusanika', 'dectar', 'krk', 'ktho', 'fssk',
-  'library', 'fep', 'fst', 'kkm', 'driving',
-]);
-const LINE_PATHS = LINES.map((line) => {
-  const sections = roadPaths(line.stopIds);
-  return { ...line, sections, routePath: sections.map(({ d }) => d).join(' ') };
-});
+const LABELLED_STOPS = new Set(['kpz', 'ftsm', 'fkab', 'fpend', 'pusanika', 'dectar', 'krk', 'ktho', 'fssk', 'library', 'fep', 'fst', 'kkm', 'driving']);
 
-// Motion uses the same complete loop as the visible route line.
-const PREVIEW_BUSES = LINE_PATHS.flatMap((line, index) => {
-  const section = line.sections[0];
-  if (!section) return [];
-  const length = section.points.slice(1).reduce((sum, [x, y], i) => (
-    sum + Math.hypot(x - section.points[i][0], y - section.points[i][1])
-  ), 0);
-  const duration = Math.max(24, Math.round(length / 18));
-  return [{ id: line.id, color: line.color, path: section.d, duration, offset: duration * (0.2 + index * 0.15) }];
-});
+// Undo the local coordinate transform used to build the offline campus map.
+const toLatLng = (x, y) => [2.9355 - y / 20025, 101.767 + x / 20000];
+const stopLatLng = ({ x, y }) => toLatLng(x, y);
+const campusBounds = L.latLngBounds(toLatLng(28, 377), toLatLng(476, -123));
+const localBounds = L.latLngBounds(toLatLng(-45, 500), toLatLng(530, -135));
 
-function PreviewBus({ bus }) {
-  const timing = { begin: `-${bus.offset}s`, dur: `${bus.duration}s`, repeatCount: 'indefinite' };
-  return (
-    <g className="preview-bus" pointerEvents="none" aria-hidden="true">
-      <animateMotion {...timing} path={bus.path} />
-      <animate {...timing} attributeName="opacity" values="0.98;1;0.98" />
-      <rect x="-16" y="-10" width="32" height="20" rx="6" fill={bus.color} stroke="#fff" strokeWidth="2.5" />
-      <g transform="translate(-12,-5)" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round">
-        <rect x="1" y="0" width="10" height="9" rx="2" />
-        <path d="M1 4h10 M3 9v2 M9 9v2" />
-        <circle cx="3.5" cy="6.5" r=".65" fill="#fff" stroke="none" />
-        <circle cx="8.5" cy="6.5" r=".65" fill="#fff" stroke="none" />
-      </g>
-      <text x="6" y="4" fill="#fff" textAnchor="middle" fontSize="11" fontWeight="800">{bus.id}</text>
-    </g>
-  );
+function buildMotion(points) {
+  let metres = 0;
+  const cumulative = points.map((point, i) => {
+    if (i) metres += L.latLng(points[i - 1]).distanceTo(point);
+    return metres;
+  });
+  return { points, cumulative, metres };
 }
 
-// Focus the map on the stops and end points used by the active journey.
-function navViewBox(points) {
-  if (!points || !points.length) return CAMPUS_VIEW;
-  const pad = 42;
-  let minX = Math.min(...points.map((p) => p.x)) - pad;
-  let maxX = Math.max(...points.map((p) => p.x)) + pad;
-  let minY = Math.min(...points.map((p) => p.y)) - pad;
-  let maxY = Math.max(...points.map((p) => p.y)) + pad;
-  let w = maxX - minX;
-  let h = maxY - minY;
-  const ratio = 1.05;
-  if (w / h < ratio) {
-    const nw = h * ratio;
-    minX -= (nw - w) / 2;
-    w = nw;
-  } else {
-    const nh = w / ratio;
-    minY -= (nh - h) / 2;
-    h = nh;
+const routes = LINES.map((line) => {
+  const sections = roadPaths(line.stopIds).map(({ points }) => points.map(([x, y]) => toLatLng(x, y)));
+  return { ...line, sections, motion: sections.length ? buildMotion(sections[0]) : null };
+});
+
+function busPosition({ points, cumulative, metres }, phase) {
+  const distance = phase * metres;
+  let low = 1;
+  let high = points.length - 1;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (cumulative[mid] < distance) low = mid + 1;
+    else high = mid;
   }
-  return `${minX} ${minY} ${w} ${h}`;
+
+  const from = points[low - 1];
+  const to = points[low];
+  const length = cumulative[low] - cumulative[low - 1];
+  const ratio = length ? (distance - cumulative[low - 1]) / length : 0;
+  return [from[0] + (to[0] - from[0]) * ratio, from[1] + (to[1] - from[1]) * ratio];
 }
 
-export function MapAttribution() {
-  return (
-    <div className="map-attribution">
-      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
-        © OpenStreetMap contributors
-      </a>
-    </div>
-  );
+function drawPath(container, points, color, weight, opacity) {
+  const common = { interactive: false, pane: 'routes', smoothFactor: 0.5 };
+  L.polyline(points, { ...common, color: '#fff', weight: weight + 2, opacity: opacity * 0.85 }).addTo(container);
+  L.polyline(points, { ...common, color, weight, opacity }).addTo(container);
+}
+
+function createBus(line, phase) {
+  const badge = document.createElement('span');
+  badge.className = 'bus-map-badge';
+  badge.style.background = line.color;
+  badge.textContent = line.id;
+  const icon = L.divIcon({ className: 'bus-map-icon', html: badge, iconSize: [30, 20] });
+  return L.marker(busPosition(line.motion, phase), { icon, interactive: false, keyboard: false, zIndexOffset: 120 });
+}
+
+function addStop(container, stop, isNavigation, active, onClick) {
+  const icon = L.divIcon({
+    className: `map-stop-icon ${stop.location === 'mapped' ? 'mapped' : 'approximate'}${active ? ' selected' : ''}`,
+    iconSize: [22, 22],
+  });
+  const marker = L.marker(stopLatLng(stop), {
+    icon, title: stop.name, keyboard: !isNavigation, interactive: !isNavigation, zIndexOffset: active ? 100 : 0,
+  });
+  if (!isNavigation) {
+    marker.on('click', () => onClick?.(stop.id));
+    marker.on('add', () => {
+      const element = marker.getElement();
+      element.setAttribute('aria-label', `Show ${stop.name} stop details`);
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          onClick?.(stop.id);
+        }
+      });
+    });
+  }
+  marker.bindTooltip(stop.short, {
+    permanent: LABELLED_STOPS.has(stop.id) || active, direction: 'top', offset: [0, -6], className: 'campus-stop-label',
+  });
+  marker.addTo(container);
+  return marker;
 }
 
 export default function CampusMap({ selectedStop, onSelectStop, navigation, pauseBusMotion = false, focusedLine = null }) {
-  const nav = navigation;
+  const canvasRef = useRef(null);
   const mapRef = useRef(null);
-  const orderedLines = focusedLine
-    ? [...LINE_PATHS.filter((line) => line.id !== focusedLine), ...LINE_PATHS.filter((line) => line.id === focusedLine)]
-    : LINE_PATHS;
+  const routeLayer = useRef(null);
+  const busLayer = useRef(null);
+  const stopLayer = useRef(null);
+  const focusLayer = useRef(null);
+  const elapsed = useRef(0);
+  const stopCallback = useRef(onSelectStop);
+  const [mapMode, setMapMode] = useState('loading');
+  const isNavigation = Boolean(navigation);
+  const focusPoints = navigation?.focusPoints;
+  const busPaths = navigation?.busPaths;
+  const markerPoint = navigation?.marker;
+  const boardPoint = navigation?.board;
+  const destinationPoint = navigation?.destination;
+
+  useLayoutEffect(() => { stopCallback.current = onSelectStop; }, [onSelectStop]);
 
   useLayoutEffect(() => {
-    if (nav) return;
-    const svg = mapRef.current;
-    if (pauseBusMotion) svg?.pauseAnimations?.();
-    else svg?.unpauseAnimations?.();
-  }, [nav, pauseBusMotion]);
-  const alightNearDestination =
-    nav &&
-    nav.alight &&
-    nav.destination &&
-    Math.hypot(nav.alight.x - nav.destination.x, nav.alight.y - nav.destination.y) < 60;
+    const element = canvasRef.current;
+    const map = L.map(element, {
+      minZoom: 3, maxZoom: 19, zoomControl: false, attributionControl: false,
+      scrollWheelZoom: false, worldCopyJump: true, zoomAnimation: false,
+    });
+    mapRef.current = map;
+    map.createPane('local-base').style.zIndex = '190';
+    map.createPane('routes').style.zIndex = '420';
+    map.fitBounds(campusBounds, { padding: [16, 16], maxZoom: 16, animate: false });
+    L.imageOverlay(LOCAL_MAP_URL, localBounds, { pane: 'local-base', interactive: false }).addTo(map);
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+    L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
+    routeLayer.current = L.layerGroup().addTo(map);
+    stopLayer.current = L.layerGroup().addTo(map);
+    focusLayer.current = L.layerGroup().addTo(map);
+    busLayer.current = L.layerGroup().addTo(map);
+
+    // Wheel zoom starts when the map is focused, so ordinary page scrolling
+    // still works as the cursor moves over the campus card.
+    function enableWheel() { map.scrollWheelZoom.enable(); }
+    function disableWheel(event) {
+      if (!element.contains(event.relatedTarget)) map.scrollWheelZoom.disable();
+    }
+    element.addEventListener('focusin', enableWheel);
+    element.addEventListener('focusout', disableWheel);
+    const updateDetail = () => element.classList.toggle('campus-overview', map.getZoom() < 14);
+    map.on('zoomend', updateDetail);
+    updateDetail();
+
+    const remoteAllowed = window.location.protocol !== 'file:' || navigator.userAgent.includes('QuickUKM/');
+    const tiles = L.tileLayer(TILE_URL, { maxZoom: 19, updateWhenIdle: true, keepBuffer: 2 });
+    let tilesLoaded = 0;
+    let triedHelp = false;
+    const showLocal = () => {
+      setMapMode('local');
+      if (!localBounds.contains(map.getCenter())) map.fitBounds(campusBounds, { animate: false, maxZoom: 16 });
+      map.setMinZoom(14);
+      map.setMaxBounds(localBounds.pad(0.45));
+    };
+    const useOnline = () => {
+      if (!remoteAllowed || !navigator.onLine) {
+        showLocal();
+        return;
+      }
+      tilesLoaded = 0;
+      triedHelp = false;
+      setMapMode('loading');
+      map.setMinZoom(3);
+      map.setMaxBounds(null);
+      if (!map.hasLayer(tiles)) tiles.addTo(map);
+    };
+
+    tiles.on('loading', () => { tilesLoaded = 0; });
+    tiles.on('tileload', () => {
+      tilesLoaded++;
+      setMapMode('online');
+      map.setMinZoom(3);
+      map.setMaxBounds(null);
+    });
+    tiles.on('load', () => {
+      if (!tilesLoaded && !triedHelp) {
+        triedHelp = true;
+        showLocal();
+      }
+    });
+    const offline = () => { tiles.remove(); showLocal(); };
+    window.addEventListener('online', useOnline);
+    window.addEventListener('offline', offline);
+    useOnline();
+
+    const resize = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+    resize.observe(element);
+    return () => {
+      resize.disconnect();
+      element.removeEventListener('focusin', enableWheel);
+      element.removeEventListener('focusout', disableWheel);
+      window.removeEventListener('online', useOnline);
+      window.removeEventListener('offline', offline);
+      tiles.off();
+      map.stop().remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!focusPoints?.length) return;
+    const map = mapRef.current;
+    map.fitBounds(focusPoints.map(stopLatLng), {
+      paddingTopLeft: [30, 86], paddingBottomRight: [30, Math.round(map.getSize().y * 0.52)],
+      maxZoom: 18, animate: false,
+    });
+  }, [focusPoints]);
+
+  useEffect(() => {
+    const layer = routeLayer.current;
+    layer.clearLayers();
+    const ordered = focusedLine
+      ? [...routes.filter((line) => line.id !== focusedLine), ...routes.filter((line) => line.id === focusedLine)]
+      : routes;
+    for (const line of ordered) {
+      const highlighted = line.id === focusedLine;
+      const opacity = isNavigation || (focusedLine && !highlighted) ? 0.2 : 0.9;
+      for (const section of line.sections) drawPath(layer, section, line.color, highlighted ? 4.5 : 3, opacity);
+    }
+    for (const path of busPaths || []) {
+      drawPath(layer, path.points.map(([x, y]) => toLatLng(x, y)), path.color, 5, 1);
+    }
+  }, [busPaths, focusedLine, isNavigation]);
+
+  useEffect(() => {
+    const layer = stopLayer.current;
+    layer.clearLayers();
+    for (const stop of MAP_STOPS) {
+      addStop(layer, stop, isNavigation, selectedStop === stop.id, (id) => stopCallback.current?.(id));
+    }
+    const activeStop = MAP_STOPS.find((stop) => stop.id === selectedStop);
+    if (activeStop) {
+      const map = mapRef.current;
+      if (map.getZoom() < 14) map.setView(stopLatLng(activeStop), 16, { animate: false });
+      else map.panInside(stopLatLng(activeStop), { padding: [35, 40], animate: false });
+    }
+  }, [isNavigation, selectedStop]);
+
+  useEffect(() => {
+    const layer = focusLayer.current;
+    layer.clearLayers();
+    for (const [point, color, label] of [
+      [boardPoint, '#0e9f6e', 'Board'],
+      [destinationPoint, '#e5484d', 'Destination'],
+      [markerPoint, '#2b59ff', null],
+    ]) {
+      if (!point) continue;
+      const circle = L.circleMarker(stopLatLng(point), { color, radius: label ? 9 : 6, weight: 3,
+        fillColor: '#fff', fillOpacity: label ? 0.25 : 1, interactive: false }).addTo(layer);
+      if (label) circle.bindTooltip(label, { permanent: true, direction: 'right', className: 'campus-stop-label' });
+    }
+  }, [boardPoint?.x, boardPoint?.y, destinationPoint?.x, destinationPoint?.y, markerPoint?.x, markerPoint?.y]);
+
+  useEffect(() => {
+    const layer = busLayer.current;
+    layer.clearLayers();
+    if (isNavigation) return;
+    const buses = routes.flatMap((line, i) => {
+      if (!line.motion || (focusedLine && line.id !== focusedLine)) return [];
+      const duration = Math.max(24000, line.motion.metres * 10);
+      const offset = 0.16 + i * 0.19;
+      const position = () => ((elapsed.current / duration) + offset) % 1;
+      return [{ line, position, icon: createBus(line, position()).addTo(layer) }];
+    });
+    if (pauseBusMotion) return;
+    let last = null;
+    let frame;
+    const tick = (time) => {
+      if (last !== null) elapsed.current += Math.min(time - last, 100);
+      last = time;
+      for (const { line, position, icon } of buses) icon.setLatLng(busPosition(line.motion, position()));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [focusedLine, isNavigation, pauseBusMotion]);
+
+  function resetView() {
+    const map = mapRef.current;
+    if (focusPoints?.length) {
+      map.fitBounds(focusPoints.map(stopLatLng), {
+        paddingTopLeft: [30, 86], paddingBottomRight: [30, Math.round(map.getSize().y * 0.52)], maxZoom: 18,
+      });
+    } else {
+      map.fitBounds(campusBounds, { padding: [16, 16], maxZoom: 16 });
+    }
+  }
 
   return (
-    <svg
-      ref={mapRef}
-      className={`campus-svg ${nav ? 'nav-campus-svg' : ''}`}
-      viewBox={nav ? navViewBox(nav.focusPoints) : CAMPUS_VIEW}
-      preserveAspectRatio={nav ? 'xMidYMin meet' : 'xMidYMid meet'}
-      role={nav ? 'img' : 'group'}
-      aria-label={nav ? 'Step-by-step route map' : 'UKM Bangi campus map with listed shuttle stops'}
-    >
-      <rect x="-200" y="-200" width="780" height="1500" fill="#eff0e5" />
-      <image href={campusMapUrl} x="-45" y="-135" width="575" height="635" />
-
-      {/* route lines */}
-      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {orderedLines.map((line) => {
-          const muted = nav || (focusedLine && line.id !== focusedLine);
-          const highlighted = line.id === focusedLine;
-          return (
-            <g key={line.id} opacity={muted ? 0.2 : 1}>
-              <path d={line.routePath} stroke="#fff" strokeWidth={highlighted ? '7' : '5'} />
-              <path data-route={line.id} d={line.routePath} stroke={line.color} strokeWidth={highlighted ? '4.2' : '2.8'} />
-            </g>
-          );
-        })}
-      </g>
-
-      {/* navigation route overlay */}
-      {nav && (
-        <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-          {nav.busPaths.map((p, index) => (
-            <g key={index}>
-              <path d={p.d} stroke="#fff" strokeWidth="8.5" opacity="0.95" />
-              <path d={p.d} stroke={p.color} strokeWidth="5" />
-            </g>
-          ))}
-        </g>
-      )}
-
-      {/* stops */}
-      {MAP_STOPS.map((s) => (
-        <g
-          key={s.id}
-          className={`stop ${selectedStop === s.id ? 'selected' : ''} ${nav ? 'nav-static' : ''}`}
-          role={nav ? undefined : 'button'}
-          tabIndex={nav ? undefined : 0}
-          aria-label={nav ? undefined : `Show ${s.name} stop details`}
-          onClick={nav ? undefined : () => onSelectStop?.(s.id)}
-          onKeyDown={nav ? undefined : (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              onSelectStop?.(s.id);
-            }
-          }}
-        >
-          <circle cx={s.x} cy={s.y} r="14" fill="transparent" />
-          {selectedStop === s.id && (
-            <circle cx={s.x} cy={s.y} r="11" fill="none" stroke="#2B59FF" strokeWidth="2">
-              <animate attributeName="r" values="11;17" dur="1.6s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.9;0" dur="1.6s" repeatCount="indefinite" />
-            </circle>
-          )}
-          <circle cx={s.x} cy={s.y} r="6" fill="#fff" stroke="#8796ab" strokeWidth="1.5" />
-          <circle cx={s.x} cy={s.y} r="2.5" fill={s.location === "mapped" ? "#2B59FF" : "#fff"} />
-          {(LABELLED_STOPS.has(s.id) || selectedStop === s.id) && (
-            <text x={s.x} y={s.y - 10} className="stop-label" textAnchor="middle">{s.short}</text>
-          )}
-          <title>{s.name} · {s.location === "mapped" ? "Mapped stop" : "Approximate stop area"}</title>
-        </g>
-      ))}
-
-      {!nav && PREVIEW_BUSES.filter((bus) => !focusedLine || bus.id === focusedLine)
-        .map((bus) => <PreviewBus key={bus.id} bus={bus} />)}
-
-      {/* boarding / alighting / destination markers */}
-      {nav && nav.board && (
-        <g>
-          <circle cx={nav.board.x} cy={nav.board.y} r="12" fill="none" stroke="#0E9F6E" strokeWidth="3" />
-          <text x={nav.board.x} y={nav.board.y - 19} className="nav-marker-label" textAnchor="middle">
-            Board
-          </text>
-        </g>
-      )}
-      {nav && nav.alight && (
-        <g>
-          <circle cx={nav.alight.x} cy={nav.alight.y} r="12" fill="none" stroke="#E5484D" strokeWidth="3" />
-          {!alightNearDestination && (
-            <text x={nav.alight.x} y={nav.alight.y - 19} className="nav-marker-label" textAnchor="middle">
-              Alight
-            </text>
-          )}
-        </g>
-      )}
-      {nav && nav.destination && (
-        <g transform={`translate(${nav.destination.x},${nav.destination.y})`}>
-          <circle r="13" fill="#E5484D" opacity="0.16" />
-          <circle r="6" fill="#E5484D" stroke="#fff" strokeWidth="3" />
-          <text y="21" className="nav-marker-label" textAnchor="middle">
-            Destination
-          </text>
-        </g>
-      )}
-
-      {/* dynamic current-location marker */}
-      {nav && nav.marker && (
-        <g transform={`translate(${nav.marker.x},${nav.marker.y})`}>
-          <circle r="10" fill="#2B59FF" opacity="0.28">
-            <animate attributeName="r" values="9;21" dur="2.1s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.35;0" dur="2.1s" repeatCount="indefinite" />
-          </circle>
-          <circle r="7" fill="#2B59FF" stroke="#fff" strokeWidth="3" />
-          <circle r="2.3" fill="#fff" />
-        </g>
-      )}
-
-    </svg>
+    <div className={`campus-map-view ${isNavigation ? 'campus-map-navigation' : ''}`}>
+      <div ref={canvasRef} className="map-viewport" aria-label={isNavigation ? 'Interactive route map' : 'Interactive UKM Bangi map'} />
+      <button className="map-reset" type="button" onClick={resetView} aria-label={isNavigation ? 'Fit route to map' : 'Reset map to UKM campus'}>
+        {isNavigation ? 'Fit route' : 'UKM campus'}
+      </button>
+      {mapMode === 'local' && <span className="map-offline" role="status">Offline campus map</span>}
+      <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
+    </div>
   );
 }

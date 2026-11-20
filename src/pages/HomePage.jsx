@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ArrowRightLeft, Bus, ChevronRight, LocateFixed, Pause, Play, Search, X } from 'lucide-react';
-import CampusMap, { MapAttribution } from '../components/CampusMap';
+import { ArrowRightLeft, Bus, ChevronRight, Pause, Play, Search, X } from 'lucide-react';
+import CampusMap from '../components/CampusMap';
 import StopSelect from '../components/StopSelect';
 import {
   LINES, OFFICIAL_BUS_APP, STOPS_BY_ID, SUGGESTED_TRIPS, linesAtStop, tripSummary,
@@ -38,10 +38,6 @@ export default function HomePage({ onTrip, onNavigate }) {
           </button>
         </div>
 
-        <button className="locate-btn" onClick={() => setSelectedStop('pusanika')} aria-label="Show Pusanika">
-          <LocateFixed size={18} />
-        </button>
-
         {stop && (
           <div className="stop-sheet">
             <div className="stop-sheet-head">
@@ -70,7 +66,6 @@ export default function HomePage({ onTrip, onNavigate }) {
           {pauseBusMotion ? <Play size={13} /> : <Pause size={13} />}
           Simulated buses
         </button>
-        <MapAttribution />
       </div>
 
       <div className="legend" role="group" aria-label="Campus shuttle route numbers">
