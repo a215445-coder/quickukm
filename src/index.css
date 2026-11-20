@@ -504,6 +504,90 @@ svg {
   margin-top: 5px;
 }
 
+.published-timetable {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--primary-soft);
+  font-size: 13px;
+}
+
+.published-timetable > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  list-style: none;
+  cursor: pointer;
+}
+
+.published-timetable > summary::-webkit-details-marker {
+  display: none;
+}
+
+.timetable-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.published-timetable[open] .timetable-chevron {
+  transform: rotate(180deg);
+}
+
+.published-timetable-content {
+  padding: 0 10px 12px;
+}
+
+.timetable-origin {
+  margin: 2px 0 8px;
+  color: var(--ink);
+}
+
+.timetable-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.timetable-days button {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.timetable-days button[aria-pressed="true"] {
+  background: var(--primary-dark);
+  color: #fff;
+}
+
+.published-departures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(47px, 1fr));
+  gap: 4px;
+  list-style: none;
+}
+
+.published-departures li {
+  padding: 4px 2px;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--ink);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.timetable-source {
+  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
 
 
 .stop-label {

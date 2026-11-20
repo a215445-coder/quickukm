@@ -34,7 +34,7 @@ For live locations and arrivals, UKM provides [MyUKM Smart Bus](https://www.ukm.
 - **Home** — campus map, stop details, trip planning and optional simulated buses on mapped road sections.
 - **Routes** — direct options and one-transfer planning using published stop orders,
   with a manual route preview.
-- **Timetable** — regular service days, operating hours and links to published departures.
+- **Timetable** — regular service hours and in-app published departures from each route’s first stop, grouped by day.
 - **Favourites** — save trips locally using the updated route data.
 - **Service Updates** — open UKM’s tracker for current bus information.
 - **iPhone app** — the whole frontend is bundled offline inside
