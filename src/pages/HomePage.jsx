@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRightLeft, Bus, ChevronRight, LocateFixed, Search, X } from 'lucide-react';
+import { ArrowRightLeft, Bus, ChevronRight, LocateFixed, Pause, Play, Search, X } from 'lucide-react';
 import CampusMap, { MapAttribution } from '../components/CampusMap';
 import StopSelect from '../components/StopSelect';
 import {
@@ -12,12 +12,15 @@ export default function HomePage({ onTrip, onNavigate }) {
   const [from, setFrom] = useState('kpz');
   const [to, setTo] = useState('');
   const [selectedStop, setSelectedStop] = useState(null);
+  const [pauseBusMotion, setPauseBusMotion] = useState(() =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
   const stop = STOPS_BY_ID[selectedStop];
 
   return (
     <>
       <section className="map-card" id="campus-map">
-        <CampusMap selectedStop={selectedStop} onSelectStop={setSelectedStop} />
+        <CampusMap selectedStop={selectedStop} onSelectStop={setSelectedStop} pauseBusMotion={pauseBusMotion} />
 
         <div className="trip-quick">
           <div className="trip-quick-head"><span>Plan a trip</span><span>UKM Bangi</span></div>
@@ -59,7 +62,14 @@ export default function HomePage({ onTrip, onNavigate }) {
           </div>
         )}
       </section>
-      <MapAttribution />
+      <div className="map-caption">
+        <button type="button" className="map-motion-control" onClick={() => setPauseBusMotion((paused) => !paused)}
+          aria-label={pauseBusMotion ? 'Play simulated bus movement' : 'Pause simulated bus movement'}>
+          {pauseBusMotion ? <Play size={13} /> : <Pause size={13} />}
+          Simulated buses
+        </button>
+        <MapAttribution />
+      </div>
 
       <div className="legend" role="group" aria-label="Campus shuttle route numbers">
         {LINES.map((line) => (

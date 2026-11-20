@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { LINES, STOPS, roadPaths } from '../data/shuttleData';
 import campusMapSvg from '../assets/ukm-bangi-map.svg?raw';
 
@@ -14,6 +15,53 @@ const LINE_PATHS = LINES.map((line) => ({
   ...line,
   routePath: roadPaths(line.stopIds).map(({ d }) => d).join(' '),
 }));
+
+function continuousRoads(stopIds) {
+  const sections = [];
+  for (const { points } of roadPaths(stopIds)) {
+    const current = sections.at(-1);
+    const end = current?.at(-1);
+    const [x, y] = points[0];
+    if (end && end[0] === x && end[1] === y) current.push(...points.slice(1));
+    else sections.push([...points]);
+  }
+
+  return sections.map((points) => ({
+    path: points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' '),
+    length: points.slice(1).reduce((sum, [x, y], i) => (
+      sum + Math.hypot(x - points[i][0], y - points[i][1])
+    ), 0),
+  })).sort((a, b) => b.length - a.length);
+}
+
+// Each bus loops over a continuous section, without crossing gaps in map data.
+const usedPreviewPaths = new Set();
+const PREVIEW_BUSES = LINES.flatMap((line, index) => {
+  const choices = continuousRoads(line.stopIds);
+  const section = choices.find(({ path }) => !usedPreviewPaths.has(path)) ?? choices[0];
+  if (!section) return [];
+  usedPreviewPaths.add(section.path);
+  const duration = Math.round(Math.max(24, section.length / 15));
+  return [{ ...line, path: section.path, duration, offset: duration * (0.2 + index * 0.15) }];
+});
+
+function PreviewBus({ bus }) {
+  const timing = { begin: `-${bus.offset}s`, dur: `${bus.duration}s`, repeatCount: 'indefinite' };
+  return (
+    <g className="preview-bus" pointerEvents="none" aria-hidden="true">
+      <animateMotion {...timing} path={bus.path} />
+      <animate {...timing} attributeName="opacity" values="0;1;1;0" keyTimes="0;0.03;0.97;1" />
+      <rect x="-16" y="-10" width="32" height="20" rx="6" fill={bus.color} stroke="#fff" strokeWidth="2.5" />
+      <g transform="translate(-12,-5)" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round">
+        <rect x="1" y="0" width="10" height="9" rx="2" />
+        <path d="M1 4h10 M3 9v2 M9 9v2" />
+        <circle cx="3.5" cy="6.5" r=".65" fill="#fff" stroke="none" />
+        <circle cx="8.5" cy="6.5" r=".65" fill="#fff" stroke="none" />
+      </g>
+      <text x="6" y="4" fill="#fff" textAnchor="middle" fontSize="11" fontWeight="800">{bus.id}</text>
+    </g>
+  );
+}
 
 // Focus the map on the stops and end points used by the active journey.
 function navViewBox(points) {
@@ -48,8 +96,16 @@ export function MapAttribution() {
   );
 }
 
-export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
+export default function CampusMap({ selectedStop, onSelectStop, navigation, pauseBusMotion = false }) {
   const nav = navigation;
+  const mapRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (nav) return;
+    const svg = mapRef.current;
+    if (pauseBusMotion) svg?.pauseAnimations?.();
+    else svg?.unpauseAnimations?.();
+  }, [nav, pauseBusMotion]);
   const alightNearDestination =
     nav &&
     nav.alight &&
@@ -58,6 +114,7 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
 
   return (
     <svg
+      ref={mapRef}
       className={`campus-svg ${nav ? 'nav-campus-svg' : ''}`}
       viewBox={nav ? navViewBox(nav.focusPoints) : CAMPUS_VIEW}
       preserveAspectRatio={nav ? 'xMidYMin meet' : 'xMidYMid meet'}
@@ -120,6 +177,8 @@ export default function CampusMap({ selectedStop, onSelectStop, navigation }) {
           <title>{s.name} · {s.location === "mapped" ? "Mapped stop" : "Approximate stop area"}</title>
         </g>
       ))}
+
+      {!nav && PREVIEW_BUSES.map((bus) => <PreviewBus key={bus.id} bus={bus} />)}
 
       {/* boarding / alighting / destination markers */}
       {nav && nav.board && (

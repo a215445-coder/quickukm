@@ -27,7 +27,7 @@ For live locations and arrivals, UKM provides [MyUKM Smart Bus](https://www.ukm.
 
 ## Features
 
-- **Home** — campus map, shuttle zones, stop details and trip planning.
+- **Home** — campus map, stop details, trip planning and optional simulated buses on mapped road sections.
 - **Routes** — direct options and one-transfer planning using published stop orders,
   with a manual route preview.
 - **Timetable** — regular service days, operating hours and links to published departures.
