@@ -2607,16 +2607,16 @@ svg {
     background: linear-gradient(270deg, #444750, #08080b 75%);
   }
 
-  /* Desktop preview proportions. */
+  /* iPhone 16 outer body dimensions: 71.6 × 147.6 mm. */
   #root {
     position: relative;
     z-index: 0;
     flex: none;
-    box-sizing: content-box;
+    box-sizing: border-box;
     width: auto;
-    height: min(852px, calc(100vh - 68px));
-    height: min(852px, calc(100dvh - 68px));
-    aspect-ratio: 425 / 852;
+    height: min(872px, calc(100vh - 48px));
+    height: min(872px, calc(100dvh - 48px));
+    aspect-ratio: 71.6 / 147.6;
     border: 10px solid transparent;
     border-radius: 56px;
     /* Paint the screen and bezel from the same rounded box. */
